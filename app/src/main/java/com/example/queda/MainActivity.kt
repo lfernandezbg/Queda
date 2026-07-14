@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             QuedaTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android",
+                        name = "Android_test",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
