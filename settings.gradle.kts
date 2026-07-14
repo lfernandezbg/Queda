@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -24,4 +25,18 @@ dependencyResolutionManagement {
 
 rootProject.name = "Queda"
 include(":app")
- 
+
+include(":core:model")
+include(":core:domain")
+include(":core:database")
+include(":core:data")
+include(":core:designsystem")
+include(":core:testing")
+
+include(":feature:onboarding")
+include(":feature:today")
+include(":feature:inventory")
+include(":feature:shopping")
+include(":feature:settings")
+
+include(":quality:architecture")

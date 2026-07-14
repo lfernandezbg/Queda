@@ -1,0 +1,4 @@
+appId: com.luisete.queda.e2e
+---
+- launchApp
+- assertVisible: "Queda - Fase 0"
