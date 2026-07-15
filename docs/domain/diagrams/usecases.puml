@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+
+actor User
+
+rectangle Queda {
+  usecase "Create stock item" as UC1
+  usecase "Open stock item" as UC2
+  usecase "Consume stock" as UC3
+  usecase "Correct quantity" as UC4
+  usecase "Move stock" as UC5
+  usecase "Discard stock" as UC6
+  usecase "Get consumption priority" as UC7
+  usecase "Manage shopping entry" as UC8
+}
+
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+@enduml

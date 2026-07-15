@@ -1,0 +1,47 @@
+@startuml
+hide methods
+skinparam classAttributeIconSize 0
+
+class Household {
+  HouseholdId id
+  String name
+}
+
+class Product {
+  ProductId id
+  HouseholdId householdId
+  String displayName
+  String normalizedName
+}
+
+class StockItem {
+  StockItemId id
+  HouseholdId householdId
+  ProductId productId
+  StockQuantity quantity
+  LocationId? locationId
+  StockState state
+}
+
+class Location {
+  LocationId id
+  HouseholdId householdId
+  String name
+  Boolean active
+}
+
+class ShoppingEntry {
+  ShoppingEntryId id
+  HouseholdId householdId
+  ProductId? productId
+  ShoppingState state
+}
+
+Household "1" -- "*" Product
+Household "1" -- "*" StockItem
+Household "1" -- "*" Location
+Household "1" -- "*" ShoppingEntry
+Product "1" -- "*" StockItem
+Location "0..1" -- "*" StockItem
+Product "0..1" -- "*" ShoppingEntry
+@enduml
