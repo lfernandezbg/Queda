@@ -18,8 +18,15 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+
+      - name: Grant execute permission
+        run: |
+          chmod +x gradlew
+          chmod +x scripts/*.sh
 
       - name: run maestro tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -30,12 +37,16 @@ jobs:
           script: |
             ./gradlew :app:assembleE2E
             adb install -r app/build/outputs/apk/e2e/app-e2e.apk
+            export MAESTRO_VERSION=2.6.0
             curl -Ls "https://get.maestro.mobile.dev" | bash
             export PATH="$PATH:$HOME/.maestro/bin"
-            maestro test .maestro/flows/smoke/00_launch_app.yaml
-            maestro test .maestro/flows/smoke/01_reset_and_launch.yaml
-            maestro test .maestro/flows/smoke/02_seed_empty_and_launch.yaml
-            maestro test .maestro/flows/smoke --format junit --output .maestro/results/report.xml
+            maestro --version
+            
+            maestro --device=localhost:5554 test .maestro/flows/smoke/00_launch_app.yaml
+            maestro --device=localhost:5554 test .maestro/flows/smoke/01_reset_and_launch.yaml
+            maestro --device=localhost:5554 test .maestro/flows/smoke/02_seed_empty_and_launch.yaml
+            
+            maestro --device=localhost:5554 test .maestro/flows/smoke --format junit --output .maestro/results/report.xml
 
       - name: Upload Maestro Results
         if: always()

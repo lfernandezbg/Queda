@@ -18,18 +18,58 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
 
-      - name: Run Gates
+      - name: Grant execute permission
         run: |
-          ./gradlew test :quality:architecture:testDebugUnitTest lint detekt ktlintCheck :app:assembleDebug :app:assembleRelease :app:assembleE2E
-          chmod +x scripts/verify-release-isolation.sh
-          ./scripts/verify-release-isolation.sh
+          chmod +x gradlew
+          chmod +x scripts/*.sh
 
-      - name: Upload Test Reports
+      - name: Clean
+        run: ./gradlew clean
+
+      - name: Test
+        run: ./gradlew test
+
+      - name: Architecture Test
+        run: ./gradlew :quality:architecture:testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew lint
+
+      - name: Detekt
+        run: ./gradlew detekt
+
+      - name: Ktlint
+        run: ./gradlew ktlintCheck
+
+      - name: Jacoco Report
+        run: ./gradlew jacocoTestReport
+
+      - name: Jacoco Verification
+        run: ./gradlew jacocoTestCoverageVerification
+
+      - name: Build Debug
+        run: ./gradlew :app:assembleDebug
+
+      - name: Build Release
+        run: ./gradlew :app:assembleRelease
+
+      - name: Build E2E
+        run: ./gradlew :app:assembleE2E
+
+      - name: Verify Release Isolation
+        run: ./scripts/verify-release-isolation.sh
+
+      - name: Upload Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reports
-          path: '**/build/reports'
+          name: all-artifacts
+          path: |
+            **/build/reports/**
+            app/build/outputs/apk/**
+            .maestro/results/**

@@ -30,27 +30,46 @@ if [ ! -d "$APK_DIR" ]; then
     exit 1
 fi
 
-APK_FILE=$(find "$APK_DIR" -name "*.apk" | head -n 1)
-if [ -z "$APK_FILE" ]; then
+APK_FILES=$(find "$APK_DIR" -name "*.apk")
+APK_COUNT=$(echo "$APK_FILES" | grep -v '^$' | wc -l)
+
+if [ "$APK_COUNT" -eq 0 ]; then
     echo "No release APK found in $APK_DIR"
     exit 1
 fi
+if [ "$APK_COUNT" -gt 1 ]; then
+    echo "Multiple APKs found in $APK_DIR. Expected exactly one."
+    exit 1
+fi
+APK_FILE=$(echo "$APK_FILES" | xargs)
 
 echo "Analyzing APK: $APK_FILE"
 
-APP_ID=$(apkanalyzer manifest application-id "$APK_FILE")
+APK_ANALYZER=""
+if command -v apkanalyzer &> /dev/null; then
+    APK_ANALYZER="apkanalyzer"
+elif [ -n "${ANDROID_SDK_ROOT:-}" ] && [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer" ]; then
+    APK_ANALYZER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer"
+elif [ -n "${ANDROID_HOME:-}" ] && [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" ]; then
+    APK_ANALYZER="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+else
+    echo "apkanalyzer not found."
+    exit 1
+fi
+
+APP_ID=$($APK_ANALYZER manifest application-id "$APK_FILE")
 if [ "$APP_ID" != "com.luisete.queda" ]; then
     echo "Invalid Application ID: $APP_ID"
     exit 1
 fi
 
-if apkanalyzer manifest print "$APK_FILE" | grep -qE "E2ETestControlActivity|queda-e2e|com\.luisete\.queda\.e2e"; then
+if $APK_ANALYZER manifest print "$APK_FILE" | grep -qE "E2ETestControlActivity|queda-e2e|com\.luisete\.queda\.e2e"; then
     echo "CRITICAL: E2E leakage found in APK manifest"
     exit 1
 fi
 
-if apkanalyzer dex packages "$APK_FILE" | grep -q "com\.luisete\.queda\.core\.testing"; then
-    echo "CRITICAL: com.luisete.queda.core.testing found in APK classes"
+if $APK_ANALYZER dex packages "$APK_FILE" | grep -qE "com\.luisete\.queda\.core\.testing|E2ETestControlActivity|queda-e2e|com\.luisete\.queda\.e2e"; then
+    echo "CRITICAL: E2E leakage found in APK classes/DEX"
     exit 1
 fi
 

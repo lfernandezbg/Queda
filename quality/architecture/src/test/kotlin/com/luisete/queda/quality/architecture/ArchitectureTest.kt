@@ -16,7 +16,22 @@ class ArchitectureTest {
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
             .importPackages("com.luisete.queda")
 
-    private val rootPath = System.getProperty("project.root") ?: throw IllegalStateException("project.root not set")
+    private val rootPath = System.getProperty("project.root") ?: error("project.root not set")
+
+    @Test
+    fun `ensure classes are actually imported`() {
+        val requiredClasses =
+            listOf(
+                "com.luisete.queda.core.designsystem.QuedaTestTags",
+                "com.luisete.queda.core.testing.E2ECommandParser",
+            )
+        requiredClasses.forEach { fqName ->
+            assertTrue(
+                "Class $fqName not found in ArchUnit import. Check classpath and dependencies.",
+                allProjectClasses.any { it.name == fqName },
+            )
+        }
+    }
 
     @Test
     fun `core model should not depend on android`() {
@@ -101,6 +116,11 @@ class ArchitectureTest {
 
         if (ext in listOf("kt", "java") && path.contains("src${File.separator}main")) {
             assertNoTodo(file, content)
+            assertNoProductImports(file, content)
+
+            if (path.contains("core${File.separator}model") || path.contains("core${File.separator}domain")) {
+                assertPureKotlinModule(file, content)
+            }
         }
 
         assertNoRestrictedPatterns(file, content)
@@ -130,6 +150,31 @@ class ArchitectureTest {
         assertFalse("File ${file.path} contains com.example", content.contains("com.example"))
         assertFalse("File ${file.path} contains allowMainThreadQueries", content.contains("allowMainThreadQueries"))
         assertFalse("File ${file.path} contains fallbackToDestructiveMigration", content.contains("fallbackToDestructiveMigration"))
+    }
+
+    private fun assertNoProductImports(
+        file: File,
+        content: String,
+    ) {
+        if (file.path.contains("app${File.separator}src${File.separator}main")) {
+            val restricted = listOf("Dao", "RoomDatabase", "Repository")
+            restricted.forEach { word ->
+                assertFalse(
+                    "App main should not import product pattern: $word in ${file.path}",
+                    content.contains("import .*$word".toRegex()),
+                )
+            }
+        }
+    }
+
+    private fun assertPureKotlinModule(
+        file: File,
+        content: String,
+    ) {
+        val forbidden = listOf("android.", "androidx.", "androidx.room")
+        forbidden.forEach { pattern ->
+            assertFalse("Pure module ${file.path} contains forbidden import: $pattern", content.contains("import $pattern"))
+        }
     }
 
     private fun checkReleaseIsolation(root: File) {

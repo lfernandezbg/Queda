@@ -26,6 +26,8 @@ if ! command -v maestro &> /dev/null; then
     exit 1
 fi
 
+maestro --version
+
 if ! command -v adb &> /dev/null; then
     echo "ADB not found."
     exit 1
@@ -57,13 +59,14 @@ echo "Using device: $SERIAL"
 ./gradlew :app:assembleE2E
 
 APK_PATH="app/build/outputs/apk/e2e"
-APK_FILE=$(find "$APK_PATH" -name "*.apk")
-APK_COUNT=$(echo "$APK_FILE" | grep -v '^$' | wc -l)
+APK_FILES=$(find "$APK_PATH" -name "*.apk")
+APK_COUNT=$(echo "$APK_FILES" | grep -v '^$' | wc -l)
 
 if [ "$APK_COUNT" -ne 1 ]; then
     echo "Expected exactly one APK in $APK_PATH, found $APK_COUNT"
     exit 1
 fi
+APK_FILE=$(echo "$APK_FILES" | xargs)
 
 adb -s "$SERIAL" install -r "$APK_FILE"
 
@@ -74,9 +77,14 @@ FLOWS=(
 )
 
 for flow in "${FLOWS[@]}"; do
-    maestro --device "$SERIAL" test "$flow"
+    maestro --device="$SERIAL" test "$flow"
 done
 
-maestro --device "$SERIAL" test .maestro/flows/smoke
+maestro --device="$SERIAL" test .maestro/flows/smoke --format junit --output .maestro/results/report.xml
+
+if [ ! -s ".maestro/results/report.xml" ]; then
+    echo "Maestro report.xml not found or empty."
+    exit 1
+fi
 
 echo "PASS"

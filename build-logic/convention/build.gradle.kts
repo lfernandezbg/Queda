@@ -45,5 +45,9 @@ gradlePlugin {
             id = "queda.quality"
             implementationClass = "QualityConventionPlugin"
         }
+        register("jacoco") {
+            id = "queda.jacoco"
+            implementationClass = "JacocoConventionPlugin"
+        }
     }
 }

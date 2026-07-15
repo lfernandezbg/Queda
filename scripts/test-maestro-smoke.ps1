@@ -18,6 +18,8 @@ if (!(Get-Command maestro -ErrorAction SilentlyContinue)) {
     throw "Maestro CLI not found."
 }
 
+Invoke-CheckedCommand -Executable "maestro" -Arguments "--version"
+
 if (!(Get-Command adb -ErrorAction SilentlyContinue)) {
     throw "ADB not found."
 }
@@ -60,9 +62,18 @@ $flows = @(
 )
 
 foreach ($flow in $flows) {
-    Invoke-CheckedCommand -Executable "maestro" -Arguments "--device", $serial, "test", $flow
+    Invoke-CheckedCommand -Executable "maestro" -Arguments "--device=$serial", "test", $flow
 }
 
-Invoke-CheckedCommand -Executable "maestro" -Arguments "--device", $serial, "test", ".maestro/flows/smoke"
+Invoke-CheckedCommand -Executable "maestro" -Arguments "--device=$serial", "test", ".maestro/flows/smoke", "--format", "junit", "--output", ".maestro/results/report.xml"
+
+if (!(Test-Path ".maestro/results/report.xml")) {
+    throw "Maestro report.xml not found."
+}
+
+$reportContent = Get-Content ".maestro/results/report.xml" -Raw
+if ([string]::IsNullOrWhiteSpace($reportContent)) {
+    throw "Maestro report.xml is empty."
+}
 
 Write-Host "PASS"

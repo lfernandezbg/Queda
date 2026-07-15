@@ -35,26 +35,40 @@ $apks = @(Get-ChildItem -Path $apkDir -Filter "*.apk" -Recurse)
 if ($apks.Count -eq 0) {
     throw "No release APK found in $apkDir"
 }
+if ($apks.Count -gt 1) {
+    throw "Multiple APKs found in $apkDir. Expected exactly one."
+}
 $apkFile = $apks[0].FullName
 
 Write-Host "Analyzing APK: $apkFile"
 
-$appId = & apkanalyzer manifest application-id $apkFile
+$apkanalyzer = ""
+if (Get-Command apkanalyzer -ErrorAction SilentlyContinue) {
+    $apkanalyzer = "apkanalyzer"
+} elseif ($env:ANDROID_SDK_ROOT -and (Test-Path "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin\apkanalyzer.bat")) {
+    $apkanalyzer = "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin\apkanalyzer.bat"
+} elseif ($env:ANDROID_HOME -and (Test-Path "$env:ANDROID_HOME\cmdline-tools\latest\bin\apkanalyzer.bat")) {
+    $apkanalyzer = "$env:ANDROID_HOME\cmdline-tools\latest\bin\apkanalyzer.bat"
+} else {
+    throw "apkanalyzer not found. Please set ANDROID_SDK_ROOT or add to PATH."
+}
+
+$appId = & $apkanalyzer manifest application-id $apkFile
 if ($LASTEXITCODE -ne 0) { throw "apkanalyzer failed" }
 if ($appId -ne "com.luisete.queda") {
     throw "Invalid Application ID: $appId"
 }
 
-$apkManifest = & apkanalyzer manifest print $apkFile
+$apkManifest = & $apkanalyzer manifest print $apkFile
 if ($LASTEXITCODE -ne 0) { throw "apkanalyzer failed" }
 if ($apkManifest -match "E2ETestControlActivity|queda-e2e|com\.luisete\.queda\.e2e") {
     throw "CRITICAL: E2E leakage found in APK manifest"
 }
 
-$dexPackages = & apkanalyzer dex packages $apkFile
+$dexPackages = & $apkanalyzer dex packages $apkFile
 if ($LASTEXITCODE -ne 0) { throw "apkanalyzer failed" }
-if ($dexPackages -match "com\.luisete\.queda\.core\.testing") {
-    throw "CRITICAL: com.luisete.queda.core.testing found in APK classes"
+if ($dexPackages -match "com\.luisete\.queda\.core\.testing|E2ETestControlActivity|queda-e2e|com\.luisete\.queda\.e2e") {
+    throw "CRITICAL: E2E leakage found in APK classes/DEX"
 }
 
 Write-Host "APK content check PASS"

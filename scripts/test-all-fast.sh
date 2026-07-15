@@ -9,6 +9,8 @@ echo "--- Phase 0: Test All Fast ---"
 ./gradlew lint
 ./gradlew detekt
 ./gradlew ktlintCheck
+./gradlew jacocoTestReport
+./gradlew jacocoTestCoverageVerification
 ./gradlew :app:assembleDebug
 ./gradlew :app:assembleRelease
 ./gradlew :app:assembleE2E

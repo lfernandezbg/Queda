@@ -12,6 +12,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 apply("com.android.library")
                 apply("org.jetbrains.kotlin.android")
                 apply("queda.quality")
+                apply("queda.jacoco")
             }
 
             extensions.configure<LibraryExtension> {

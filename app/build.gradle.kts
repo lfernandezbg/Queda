@@ -23,8 +23,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
 
@@ -35,7 +33,6 @@ dependencies {
     implementation(project(":feature:settings"))
 
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
 
     "e2eImplementation"(project(":core:testing"))
     baselineProfile(project(":baselineprofile"))

@@ -9,6 +9,7 @@ class KotlinLibraryConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("org.jetbrains.kotlin.jvm")
                 apply("queda.quality")
+                apply("queda.jacoco")
             }
 
             extensions.configure<KotlinJvmProjectExtension> {

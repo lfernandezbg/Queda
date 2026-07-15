@@ -11,6 +11,8 @@ Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments ":quality:architect
 Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments "lint"
 Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments "detekt"
 Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments "ktlintCheck"
+Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments "jacocoTestReport"
+Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments "jacocoTestCoverageVerification"
 Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments ":app:assembleDebug"
 Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments ":app:assembleRelease"
 Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments ":app:assembleE2E"
