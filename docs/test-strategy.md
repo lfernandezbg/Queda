@@ -2,10 +2,10 @@
 
 | Requisito | Unit | Architecture | Instrumented | Maestro | CI | Estado |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Infraestructura Base | PASS | PASS | PASS | PASS | PASS | READY |
-| Aislamiento de Módulos | - | PASS | - | - | PASS | READY |
-| Limpieza de Release | - | PASS | - | - | PASS | READY |
-| Cobertura (JaCoCo) | PASS | - | - | - | PASS | READY |
+| Infraestructura Base | PASS | PASS | PASS | PASS | NO EJECUTADO | READY |
+| Aislamiento de Módulos | - | PASS | - | - | NO EJECUTADO | READY |
+| Limpieza de Release | - | PASS | - | - | NO EJECUTADO | READY |
+| Cobertura (JaCoCo) | PASS | - | - | - | NO EJECUTADO | READY |
 
 ## Matriz Inicial
 - **Unit**: JUnit 4, enfocado en utilidades y parsers (`core:testing`).

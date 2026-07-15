@@ -148,8 +148,11 @@ class ArchitectureTest {
         content: String,
     ) {
         assertFalse("File ${file.path} contains com.example", content.contains("com.example"))
-        assertFalse("File ${file.path} contains allowMainThreadQueries", content.contains("allowMainThreadQueries"))
-        assertFalse("File ${file.path} contains fallbackToDestructiveMigration", content.contains("fallbackToDestructiveMigration"))
+        // Restricted patterns checked only if not this test itself
+        if (!file.path.contains("ArchitectureTest.kt")) {
+            assertFalse("File ${file.path} contains allowMainThreadQueries", content.contains("allowMainThreadQueries"))
+            assertFalse("File ${file.path} contains fallbackToDestructiveMigration", content.contains("fallbackToDestructiveMigration"))
+        }
     }
 
     private fun assertNoProductImports(

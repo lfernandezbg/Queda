@@ -39,12 +39,12 @@ $props = @(
 )
 
 foreach ($prop in $props) {
-    $val = adb -s $serial shell getprop $prop
-    Write-Host "$prop: $val"
+    $val = (adb -s $serial shell getprop $prop).Trim()
+    Write-Host "${prop}: $val"
 }
 
-$size = adb -s $serial shell wm size
+$size = (adb -s $serial shell wm size).Trim()
 Write-Host "$size"
 
-$density = adb -s $serial shell wm density
+$density = (adb -s $serial shell wm density).Trim()
 Write-Host "$density"
