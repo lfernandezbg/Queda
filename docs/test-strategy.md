@@ -1,42 +1,39 @@
 # Estrategia de testing — Queda
 
-Los únicos estados válidos son:
+Los únicos resultados válidos para cada ejecución son:
 
 - `PASS`
 - `FAIL`
 - `NO EJECUTADO`
 
-No se utiliza REA&#8205;DY.
+| Gate | Local | CI |
+|---|---:|---:|
+| Tests unitarios | PASS | NO EJECUTADO |
+| Tests de arquitectura | PASS | NO EJECUTADO |
+| Android Lint | PASS | NO EJECUTADO |
+| Detekt | PASS | NO EJECUTADO |
+| Ktlint | PASS | NO EJECUTADO |
+| JaCoCo report | PASS | NO EJECUTADO |
+| JaCoCo verification | PASS | NO EJECUTADO |
+| Assemble Debug | PASS | NO EJECUTADO |
+| Assemble Release | PASS | NO EJECUTADO |
+| Assemble E2E | PASS | NO EJECUTADO |
+| Aislamiento release | PASS | NO EJECUTADO |
+| Instrumentados API 33 | PASS | NO EJECUTADO |
+| Instrumentados API 28 | NO EJECUTADO | NO EJECUTADO |
+| Maestro 2.6.0 individual | PASS | NO EJECUTADO |
+| Maestro 2.6.0 suite | PASS | NO EJECUTADO |
+| Android CI | NO EJECUTADO | NO EJECUTADO |
+| Android Instrumented | NO EJECUTADO | NO EJECUTADO |
+| Android Maestro | NO EJECUTADO | NO EJECUTADO |
 
-| Gate | Local | CI | Estado actual |
-|---|---:|---:|---:|
-| Tests unitarios | PASS | NO EJECUTADO | PASS LOCAL |
-| Tests de arquitectura | PASS | NO EJECUTADO | PASS LOCAL |
-| Android Lint | PASS | NO EJECUTADO | PASS LOCAL |
-| Detekt | PASS | NO EJECUTADO | PASS LOCAL |
-| Ktlint | PASS | NO EJECUTADO | PASS LOCAL |
-| JaCoCo report | PASS | NO EJECUTADO | PASS LOCAL |
-| JaCoCo verification | PASS | NO EJECUTADO | PASS LOCAL |
-| Assemble Debug | PASS | NO EJECUTADO | PASS LOCAL |
-| Assemble Release | PASS | NO EJECUTADO | PASS LOCAL |
-| Assemble E2E | PASS | NO EJECUTADO | PASS LOCAL |
-| Aislamiento release | PASS | NO EJECUTADO | PASS |
-| Instrumentados API 33 | PASS | — | PASS |
-| Instrumentados API 28 | NO EJECUTADO | NO EJECUTADO | NO EJECUTADO |
-| Maestro 2.6.0 individual | PASS | NO EJECUTADO | PASS |
-| Maestro 2.6.0 suite | PASS | NO EJECUTADO | PASS |
-| Android CI | — | NO EJECUTADO | NO EJECUTADO |
-| Android Instrumented | — | NO EJECUTADO | NO EJECUTADO |
-| Android Maestro | — | NO EJECUTADO | NO EJECUTADO |
+## Estado de la fase
 
-La Fase 0 solo será `PASS` cuando:
+La Fase 0 tiene validación local completa.
 
-1. Todos los gates locales terminen correctamente.
-2. El aislamiento release termine en `PASS`.
-3. API 28 termine en `PASS`.
-4. Los tres workflows de GitHub Actions terminen en verde.
-5. No exista ningún resultado declarado sin evidencia.
+Solo podrá considerarse cerrada globalmente cuando:
 
-Después de ejecutar los gates, actualiza esta tabla con los resultados reales.
-
-No cambies un estado a `PASS` si el comando correspondiente no se ejecutó.
+1. Android CI termine en `PASS`.
+2. Android Instrumented sobre API 28 termine en `PASS`.
+3. Android Maestro sobre API 28 termine en `PASS`.
+4. No exista ningún resultado declarado sin una ejecución real.
