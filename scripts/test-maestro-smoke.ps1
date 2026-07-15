@@ -18,7 +18,14 @@ if (!(Get-Command maestro -ErrorAction SilentlyContinue)) {
     throw "Maestro CLI not found."
 }
 
-Invoke-CheckedCommand -Executable "maestro" -Arguments "--version"
+$maestroVersion = (& maestro --version | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "Unable to obtain Maestro version."
+}
+
+if ($maestroVersion -notmatch '(^|[^0-9])2\.6\.0([^0-9]|$)') {
+    throw "Expected Maestro 2.6.0, found: $maestroVersion"
+}
 
 if (!(Get-Command adb -ErrorAction SilentlyContinue)) {
     throw "ADB not found."

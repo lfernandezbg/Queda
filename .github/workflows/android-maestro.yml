@@ -19,7 +19,7 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
 
@@ -35,18 +35,33 @@ jobs:
           target: google_apis
           arch: x86_64
           script: |
-            ./gradlew :app:assembleE2E
-            adb install -r app/build/outputs/apk/e2e/app-e2e.apk
+            SERIALS="$(adb devices | awk 'NR > 1 && $2 == "device" { print $1 }')"
+            DEVICE_COUNT="$(printf '%s\n' "$SERIALS" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+            if [ "$DEVICE_COUNT" -ne 1 ]; then
+                echo "Expected exactly one connected Android device, found $DEVICE_COUNT"
+                adb devices -l
+                exit 1
+            fi
+
+            SERIAL="$(printf '%s\n' "$SERIALS" | sed '/^$/d')"
+            echo "Using Android device: $SERIAL"
+
+            mkdir -p .maestro/results
+
             export MAESTRO_VERSION=2.6.0
             curl -Ls "https://get.maestro.mobile.dev" | bash
             export PATH="$PATH:$HOME/.maestro/bin"
-            maestro --version
-            
-            maestro --device=localhost:5554 test .maestro/flows/smoke/00_launch_app.yaml
-            maestro --device=localhost:5554 test .maestro/flows/smoke/01_reset_and_launch.yaml
-            maestro --device=localhost:5554 test .maestro/flows/smoke/02_seed_empty_and_launch.yaml
-            
-            maestro --device=localhost:5554 test .maestro/flows/smoke --format junit --output .maestro/results/report.xml
+
+            MAESTRO_OUTPUT="$(maestro --version)"
+            echo "$MAESTRO_OUTPUT"
+
+            if ! printf '%s' "$MAESTRO_OUTPUT" | grep -Eq '(^|[^0-9])2\.6\.0([^0-9]|$)'; then
+                echo "Expected Maestro 2.6.0"
+                exit 1
+            fi
+
+            ./scripts/test-maestro-smoke.sh --device-serial "$SERIAL"
 
       - name: Upload Maestro Results
         if: always()
@@ -54,5 +69,5 @@ jobs:
         with:
           name: maestro-results
           path: |
-            .maestro/results
-            ~/.maestro/tests
+            .maestro/results/**
+            ~/.maestro/tests/**

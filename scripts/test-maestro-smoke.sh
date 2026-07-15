@@ -6,12 +6,17 @@ DEVICE_SERIAL=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --device-serial)
+      if [ "$#" -lt 2 ]; then
+          echo "Missing value for --device-serial"
+          exit 1
+      fi
       DEVICE_SERIAL="$2"
       shift
       shift
       ;;
     *)
-      shift
+      echo "Unknown argument: $1"
+      exit 1
       ;;
   esac
 done
@@ -26,7 +31,13 @@ if ! command -v maestro &> /dev/null; then
     exit 1
 fi
 
-maestro --version
+MAESTRO_OUTPUT="$(maestro --version)"
+echo "$MAESTRO_OUTPUT"
+
+if ! printf '%s' "$MAESTRO_OUTPUT" | grep -Eq '(^|[^0-9])2\.6\.0([^0-9]|$)'; then
+    echo "Expected Maestro 2.6.0, found: $MAESTRO_OUTPUT"
+    exit 1
+fi
 
 if ! command -v adb &> /dev/null; then
     echo "ADB not found."

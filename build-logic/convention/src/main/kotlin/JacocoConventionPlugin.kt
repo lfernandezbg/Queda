@@ -1,7 +1,10 @@
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
@@ -14,8 +17,18 @@ class JacocoConventionPlugin : Plugin<Project> {
         with(target) {
             pluginManager.apply("jacoco")
 
+            val libs =
+                extensions
+                    .getByType<VersionCatalogsExtension>()
+                    .named("libs")
+
             extensions.configure<JacocoPluginExtension> {
-                toolVersion = "0.8.12"
+                toolVersion =
+                    libs.findVersion("jacoco")
+                        .orElseThrow {
+                            GradleException("JaCoCo version is missing from Version Catalog")
+                        }
+                        .requiredVersion
             }
 
             val fileFilter = listOf(
