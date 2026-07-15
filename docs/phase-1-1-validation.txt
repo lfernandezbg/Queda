@@ -1,0 +1,124 @@
+PROYECTO: Queda
+FASE: 1.1 — Identificadores y Modelo de Cantidad
+ESTADO: COMPLETADO
+
+================================================================
+1. ARCHIVOS CREADOS
+================================================================
+- core/model/src/main/kotlin/com/luisete/queda/core/model/id/HouseholdId.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/id/ProductId.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/id/StockItemId.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/id/LocationId.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/id/ShoppingEntryId.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/id/DomainEventId.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/QuantityDimension.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/MeasurementUnit.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/ApproximateLevel.kt
+- core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/StockQuantity.kt
+- core/model/src/test/kotlin/com/luisete/queda/core/model/id/IdTests.kt
+- core/model/src/test/kotlin/com/luisete/queda/core/model/quantity/QuantityTests.kt
+- core/domain/src/main/kotlin/com/luisete/queda/core/domain/quantity/QuantityOperations.kt
+- core/domain/src/main/kotlin/com/luisete/queda/core/domain/result/DomainResult.kt
+- core/domain/src/test/kotlin/com/luisete/queda/core/domain/quantity/QuantityOperationsTests.kt
+
+================================================================
+2. ARCHIVOS MODIFICADOS
+================================================================
+- gradle/libs.versions.toml (Añadido Kotest 5.9.1)
+- core/model/build.gradle.kts (Añadidas dependencias de test)
+- core/domain/build.gradle.kts (Añadidas dependencias de test)
+
+================================================================
+3. MODELO IMPLEMENTADO
+================================================================
+IDENTIFICADORES:
+- Implementados como @JvmInline value classes sobre String.
+- Validación estricta: No permite vacíos ni espacios en blanco.
+- Generación: UUID aleatorio mediante factory newId().
+- Tipos: HouseholdId, ProductId, StockItemId, LocationId, ShoppingEntryId, DomainEventId.
+
+MODELO DE CANTIDAD:
+- Dimensiones: COUNT, MASS, VOLUME.
+- Unidades: UNIT, GRAM, KILOGRAM, MILLILITER, LITER.
+- Niveles Aproximados: EMPTY(0), ALMOST_EMPTY(1), LOW(2), MEDIUM(3), HIGH(4), FULL(5).
+- StockQuantity (Sealed Interface):
+  * ExactQuantity: Usa BigDecimal, normalización de ceros finales, máximo 3 decimales significativos.
+  * ApproximateQuantity: Usa ApproximateLevel con propiedad de orden explícita.
+
+RESULTADOS DE DOMINIO:
+- DomainResult<T>: Éxito con valor o Fallo con DomainError tipado.
+- Errores contemplados: IncompatibleQuantityDimensions, NegativeQuantity, TooManyDecimalPlaces, InsufficientQuantity, ApproximateLevelDidNotDecrease, InvalidQuantityText.
+
+================================================================
+4. OPERACIONES DE DOMINIO
+================================================================
+- convert(): Conversión entre g <-> kg y ml <-> l. Falla si hay pérdida de precisión (>3 decimales).
+- add(): Suma de cantidades exactas con conversión automática de la segunda a la primera unidad.
+- subtract(): Resta de cantidades exactas. Falla si el resultado es negativo.
+- consume(): Alias semántico de subtract() que devuelve InsufficientQuantity si el consumo supera el stock.
+- correct(): Permite establecer una nueva cantidad arbitraria (no negativa).
+- consumeApproximate(): Exige que el nivel final sea estrictamente inferior al inicial.
+- correctApproximate(): Permite cualquier cambio de nivel.
+
+================================================================
+5. INFORME DE TESTS
+================================================================
+EJECUTADOS: 25 tests unitarios.
+PASADOS: 25.
+FALLIDOS: 0.
+
+PROPERTY-BASED TESTS (Kotest):
+- Se han verificado 3 invariantes con 1000 iteraciones cada una:
+  1. Identidad aditiva del cero (q + 0 = q).
+  2. Identidad sustractiva (q - q = 0).
+  3. Preservación de dimensión (convertir GRAM a KILOGRAM mantiene la dimensión MASS).
+
+================================================================
+6. CALIDAD Y BUILDS
+================================================================
+BUILD STATUS:
+- Debug Build: PASS
+- Release Build: PASS
+- E2E Build: PASS
+
+QUALITY GATES:
+- Architecture: PASS. Sin dependencias de Android en core:model ni core:domain.
+- Lint: PASS.
+- Detekt: PASS. (Supresiones aplicadas en enums para MagicNumber y en factories para SwallowedException de negocio).
+- Ktlint: PASS. Formato corregido y verificado.
+- JaCoCo: Informe generado con cobertura de los nuevos paquetes de modelo y dominio.
+
+================================================================
+7. LIMITACIONES REALES
+================================================================
+- La conversión es "lossless": 1 GRAM a KILOGRAM es 0.001 (PASS), pero si se intentara una unidad con más de 3 decimales resultantes, el sistema fallaría por diseño para no inventar redondeos no autorizados por el usuario.
+
+================================================================
+8. ESTADO DE GIT
+================================================================
+git status --short:
+ M core/domain/build.gradle.kts
+ AM core/domain/src/main/kotlin/com/luisete/queda/core/domain/quantity/QuantityOperations.kt
+ AM core/domain/src/main/kotlin/com/luisete/queda/core/domain/result/DomainResult.kt
+ AM core/domain/src/test/kotlin/com/luisete/queda/core/domain/quantity/QuantityOperationsTests.kt
+ M core/model/build.gradle.kts
+ A  core/model/src/main/kotlin/com/luisete/queda/core/model/id/DomainEventId.kt
+ A  core/model/src/main/kotlin/com/luisete/queda/core/model/id/HouseholdId.kt
+ A  core/model/src/main/kotlin/com/luisete/queda/core/model/id/LocationId.kt
+ A  core/model/src/main/kotlin/com/luisete/queda/core/model/id/ProductId.kt
+ A  core/model/src/main/kotlin/com/luisete/queda/core/model/id/ShoppingEntryId.kt
+ A  core/model/src/main/kotlin/com/luisete/queda/core/model/id/StockItemId.kt
+ AM core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/ApproximateLevel.kt
+ AM core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/MeasurementUnit.kt
+ AM core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/QuantityDimension.kt
+ AM core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/StockQuantity.kt
+ AM core/model/src/test/kotlin/com/luisete/queda/core/model/id/IdTests.kt
+ AM core/model/src/test/kotlin/com/luisete/queda/core/model/quantity/QuantityTests.kt
+ M gradle/libs.versions.toml
+
+git diff --check: PASS
+
+================================================================
+9. CONFIRMACIÓN
+================================================================
+“No se ha iniciado ningún bloque posterior de la Fase 1.”
