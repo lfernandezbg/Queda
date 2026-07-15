@@ -44,7 +44,10 @@ if ! command -v adb &> /dev/null; then
     exit 1
 fi
 
-CONNECTED_DEVICES=$(adb devices | grep -E "\tdevice$" | cut -f1)
+CONNECTED_DEVICES="$(
+    adb devices |
+    awk 'NR > 1 && $2 == "device" { print $1 }'
+)"
 
 if [ -n "$DEVICE_SERIAL" ]; then
     if ! echo "$CONNECTED_DEVICES" | grep -v '^$' | grep -q "^$DEVICE_SERIAL$"; then

@@ -45,5 +45,5 @@ jobs:
           name: maestro-results
           path: |
             .maestro/results/**
-            $HOME/.maestro/tests/**
+            ~/.maestro/tests/**
           if-no-files-found: warn
