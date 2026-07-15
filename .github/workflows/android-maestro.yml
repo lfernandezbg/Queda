@@ -11,6 +11,7 @@ jobs:
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
+
       - name: set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -23,51 +24,26 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
 
-      - name: Grant execute permission
+      - name: Grant execute permissions
         run: |
           chmod +x gradlew
           chmod +x scripts/*.sh
 
-      - name: run maestro tests
+      - name: Run Maestro smoke tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 28
           target: google_apis
           arch: x86_64
-          script: |
-            SERIALS="$(adb devices | awk 'NR > 1 && $2 == "device" { print $1 }')"
-            DEVICE_COUNT="$(printf '%s\n' "$SERIALS" | sed '/^$/d' | wc -l | tr -d ' ')"
+          emulator-boot-timeout: 600
+          script: bash ./scripts/run-maestro-ci.sh
 
-            if [ "$DEVICE_COUNT" -ne 1 ]; then
-                echo "Expected exactly one connected Android device, found $DEVICE_COUNT"
-                adb devices -l
-                exit 1
-            fi
-
-            SERIAL="$(printf '%s\n' "$SERIALS" | sed '/^$/d')"
-            echo "Using Android device: $SERIAL"
-
-            mkdir -p .maestro/results
-
-            export MAESTRO_VERSION=2.6.0
-            curl -Ls "https://get.maestro.mobile.dev" | bash
-            export PATH="$PATH:$HOME/.maestro/bin"
-
-            MAESTRO_OUTPUT="$(maestro --version)"
-            echo "$MAESTRO_OUTPUT"
-
-            if ! printf '%s' "$MAESTRO_OUTPUT" | grep -Eq '(^|[^0-9])2\.6\.0([^0-9]|$)'; then
-                echo "Expected Maestro 2.6.0"
-                exit 1
-            fi
-
-            ./scripts/test-maestro-smoke.sh --device-serial "$SERIAL"
-
-      - name: Upload Maestro Results
+      - name: Upload Maestro results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: maestro-results
           path: |
             .maestro/results/**
-            ~/.maestro/tests/**
+            $HOME/.maestro/tests/**
+          if-no-files-found: warn
