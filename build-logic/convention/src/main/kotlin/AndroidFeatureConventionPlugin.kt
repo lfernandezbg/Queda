@@ -9,6 +9,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
         with(target) {
             with(pluginManager) {
                 apply("queda.android.library")
+                apply("queda.android.compose")
                 apply("queda.android.hilt")
             }
 

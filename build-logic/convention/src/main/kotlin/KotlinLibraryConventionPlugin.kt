@@ -8,10 +8,11 @@ class KotlinLibraryConventionPlugin : Plugin<Project> {
         with(target) {
             with(pluginManager) {
                 apply("org.jetbrains.kotlin.jvm")
+                apply("queda.quality")
             }
 
             extensions.configure<KotlinJvmProjectExtension> {
-                jvmToolchain(17)
+                jvmToolchain(AndroidSdk.JVM_VERSION)
             }
         }
     }

@@ -1,4 +1,8 @@
 appId: com.luisete.queda.e2e
 ---
+- clearState
 - launchApp
-- assertVisible: "Queda - Fase 0"
+- assertVisible:
+    id: "app_root"
+- assertVisible:
+    id: "screen_foundation"

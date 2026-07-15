@@ -1,0 +1,47 @@
+name: Android Maestro Smoke
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  maestro-smoke:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: run maestro tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          target: google_apis
+          arch: x86_64
+          script: |
+            ./gradlew :app:assembleE2E
+            adb install -r app/build/outputs/apk/e2e/app-e2e.apk
+            curl -Ls "https://get.maestro.mobile.dev" | bash
+            export PATH="$PATH:$HOME/.maestro/bin"
+            maestro test .maestro/flows/smoke/00_launch_app.yaml
+            maestro test .maestro/flows/smoke/01_reset_and_launch.yaml
+            maestro test .maestro/flows/smoke/02_seed_empty_and_launch.yaml
+            maestro test .maestro/flows/smoke --format junit --output .maestro/results/report.xml
+
+      - name: Upload Maestro Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-results
+          path: |
+            .maestro/results
+            ~/.maestro/tests

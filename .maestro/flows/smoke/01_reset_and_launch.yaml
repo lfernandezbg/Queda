@@ -1,0 +1,7 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- assertVisible:
+    id: "app_root"
+- assertVisible:
+    id: "screen_foundation"

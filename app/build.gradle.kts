@@ -2,6 +2,7 @@ plugins {
     id("queda.android.application")
     id("queda.android.compose")
     id("queda.android.hilt")
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -9,6 +10,15 @@ android {
 
     defaultConfig {
         applicationId = "com.luisete.queda"
+    }
+
+    buildTypes {
+        create("benchmark") {
+            initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
+            signingConfig = signingConfigs.getByName("debug")
+            isDebuggable = false
+        }
     }
 }
 
@@ -26,4 +36,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    "e2eImplementation"(project(":core:testing"))
+    baselineProfile(project(":baselineprofile"))
 }

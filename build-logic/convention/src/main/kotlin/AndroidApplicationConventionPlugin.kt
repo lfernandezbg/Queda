@@ -11,19 +11,27 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("com.android.application")
                 apply("org.jetbrains.kotlin.android")
+                apply("queda.quality")
             }
 
             extensions.configure<ApplicationExtension> {
-                compileSdk = 35
+                compileSdk = AndroidSdk.COMPILE_SDK
 
                 defaultConfig {
                     applicationId = "com.luisete.queda"
-                    minSdk = 28
-                    targetSdk = 35
+                    minSdk = AndroidSdk.MIN_SDK
+                    targetSdk = AndroidSdk.TARGET_SDK
                     versionCode = 1
                     versionName = "1.0"
 
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+                    vectorDrawables {
+                        useSupportLibrary = true
+                    }
+                }
+
+                buildFeatures {
+                    buildConfig = true
                 }
 
                 buildTypes {
@@ -36,22 +44,32 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     }
                     debug {
                         applicationIdSuffix = ".debug"
+                        isDebuggable = true
+                        isMinifyEnabled = false
                     }
                     create("e2e") {
                         initWith(getByName("debug"))
                         applicationIdSuffix = ".e2e"
+                        isDebuggable = true
+                        isMinifyEnabled = false
                         matchingFallbacks += listOf("debug")
                     }
                 }
 
                 compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_17
-                    targetCompatibility = JavaVersion.VERSION_17
+                    sourceCompatibility = JavaVersion.toVersion(AndroidSdk.JVM_VERSION)
+                    targetCompatibility = JavaVersion.toVersion(AndroidSdk.JVM_VERSION)
+                }
+
+                packaging {
+                    resources {
+                        excludes += "/META-INF/{AL2.0,LGPL2.1}"
+                    }
                 }
             }
             
             extensions.configure<KotlinAndroidProjectExtension> {
-                jvmToolchain(17)
+                jvmToolchain(AndroidSdk.JVM_VERSION)
             }
         }
     }

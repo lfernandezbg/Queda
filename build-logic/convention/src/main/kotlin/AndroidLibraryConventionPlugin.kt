@@ -1,4 +1,4 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -11,34 +11,35 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("com.android.library")
                 apply("org.jetbrains.kotlin.android")
+                apply("queda.quality")
             }
 
             extensions.configure<LibraryExtension> {
-                compileSdk = 35
+                compileSdk = AndroidSdk.COMPILE_SDK
 
                 defaultConfig {
-                    minSdk = 28
+                    minSdk = AndroidSdk.MIN_SDK
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                 }
 
                 buildTypes {
                     release {
                         isMinifyEnabled = false
-                        proguardFiles(
-                            getDefaultProguardFile("proguard-android-optimize.txt"),
-                            "proguard-rules.pro"
-                        )
                     }
                 }
 
                 compileOptions {
-                    sourceCompatibility = JavaVersion.VERSION_17
-                    targetCompatibility = JavaVersion.VERSION_17
+                    sourceCompatibility = JavaVersion.toVersion(AndroidSdk.JVM_VERSION)
+                    targetCompatibility = JavaVersion.toVersion(AndroidSdk.JVM_VERSION)
+                }
+                
+                testOptions {
+                    unitTests.isIncludeAndroidResources = true
                 }
             }
             
             extensions.configure<KotlinAndroidProjectExtension> {
-                jvmToolchain(17)
+                jvmToolchain(AndroidSdk.JVM_VERSION)
             }
         }
     }

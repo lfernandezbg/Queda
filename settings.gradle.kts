@@ -24,6 +24,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Queda"
+
 include(":app")
 
 include(":core:model")
@@ -40,3 +41,6 @@ include(":feature:shopping")
 include(":feature:settings")
 
 include(":quality:architecture")
+
+include(":benchmark")
+include(":baselineprofile")

@@ -21,5 +21,15 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and Test
-        run: ./gradlew test lint assembleDebug assembleE2E
+      - name: Run Gates
+        run: |
+          ./gradlew test :quality:architecture:testDebugUnitTest lint detekt ktlintCheck :app:assembleDebug :app:assembleRelease :app:assembleE2E
+          chmod +x scripts/verify-release-isolation.sh
+          ./scripts/verify-release-isolation.sh
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: '**/build/reports'

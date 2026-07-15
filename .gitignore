@@ -1,15 +1,46 @@
+# Android Studio
+.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+
+# Gradle and Kotlin
+.gradle/
+.kotlin/
+build-logic/.gradle/
+**/build/
+
+# Local machine configuration
 local.properties
+
+# Android generated outputs
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+output-metadata.json
+
+# Signing and secrets
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+.env
+.env.*
+
+# Databases and logs
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# Test and benchmark local output
+maestro-results/
+.maestro/results/
+benchmark-results/
+
+# Archives generated for reviews
+*.zip
+
+# Operating system
+.DS_Store
+Thumbs.db

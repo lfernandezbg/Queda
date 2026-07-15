@@ -7,7 +7,8 @@ group = "com.luisete.queda.buildlogic"
 dependencies {
     implementation(libs.android.gradlePlugin)
     implementation(libs.kotlin.gradlePlugin)
-    implementation(libs.ksp.gradlePlugin)
+    implementation(libs.detekt.gradlePlugin)
+    implementation(libs.ktlint.gradlePlugin)
 }
 
 gradlePlugin {
@@ -39,6 +40,10 @@ gradlePlugin {
         register("kotlinLibrary") {
             id = "queda.kotlin.library"
             implementationClass = "KotlinLibraryConventionPlugin"
+        }
+        register("quality") {
+            id = "queda.quality"
+            implementationClass = "QualityConventionPlugin"
         }
     }
 }
