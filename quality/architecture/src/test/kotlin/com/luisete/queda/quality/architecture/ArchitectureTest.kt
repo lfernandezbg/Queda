@@ -75,7 +75,7 @@ class ArchitectureTest {
 
     @Test
     fun `no com example package`() {
-        noClasses().should().resideInAPackage("com.example..")
+        noClasses().should().resideInAPackage("com.ex" + "ample..")
             .check(allProjectClasses)
     }
 
@@ -139,15 +139,15 @@ class ArchitectureTest {
         file: File,
         content: String,
     ) {
-        assertFalse("File ${file.path} contains TODO", content.contains("TODO"))
-        assertFalse("File ${file.path} contains FIXME", content.contains("FIXME"))
+        assertFalse("File ${file.path} contains forbidden token", content.contains("TO" + "DO"))
+        assertFalse("File ${file.path} contains forbidden token", content.contains("FIX" + "ME"))
     }
 
     private fun assertNoRestrictedPatterns(
         file: File,
         content: String,
     ) {
-        assertFalse("File ${file.path} contains com.example", content.contains("com.example"))
+        assertFalse("File ${file.path} contains forbidden token", content.contains("com.ex" + "ample"))
         // Restricted patterns checked only if not this test itself
         if (!file.path.contains("ArchitectureTest.kt")) {
             assertFalse("File ${file.path} contains allowMainThreadQueries", content.contains("allowMainThreadQueries"))

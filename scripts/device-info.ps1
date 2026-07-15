@@ -5,31 +5,60 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Invoke-AdbCapture {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    $result = & adb @Arguments 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "ADB failed: adb $($Arguments -join ' ')"
+    }
+
+    return ($result | Out-String).Trim()
+}
+
 if (!(Get-Command adb -ErrorAction SilentlyContinue)) {
     throw "ADB not found."
 }
 
-$adbDevices = @(adb devices | Select-String -Pattern "\tdevice$")
-$connectedSerials = @($adbDevices | ForEach-Object { $_.ToString().Split("`t")[0] })
+$deviceOutput = Invoke-AdbCapture -Arguments @("devices")
+
+$connectedSerials =
+    @(
+        $deviceOutput -split "`r?`n" |
+        ForEach-Object {
+            if ($_ -match "^([^\s]+)\s+device$") {
+                $matches[1]
+            }
+        }
+    )
 
 if ($DeviceSerial) {
     if ($connectedSerials -notcontains $DeviceSerial) {
-        throw "Device $DeviceSerial not found or not in 'device' state."
+        throw "Device $DeviceSerial not found or not in device state."
     }
+
     $serial = $DeviceSerial
-} else {
+}
+else {
     if ($connectedSerials.Count -eq 0) {
-        throw "No devices connected."
+        throw "No Android device is connected."
     }
+
     if ($connectedSerials.Count -gt 1) {
-        throw "Multiple devices found. Specify -DeviceSerial."
+        throw "Multiple Android devices found. Specify -DeviceSerial."
     }
+
     $serial = $connectedSerials[0]
 }
 
-Write-Host "--- Device Info: $serial ---"
+Write-Host "--- Device Info ---"
+Write-Host "Serial: $serial"
 
-$props = @(
+$properties = @(
     "ro.product.manufacturer",
     "ro.product.model",
     "ro.build.version.release",
@@ -38,13 +67,36 @@ $props = @(
     "ro.build.version.incremental"
 )
 
-foreach ($prop in $props) {
-    $val = (adb -s $serial shell getprop $prop).Trim()
-    Write-Host "${prop}: $val"
+foreach ($property in $properties) {
+    $value =
+        Invoke-AdbCapture -Arguments @(
+            "-s",
+            $serial,
+            "shell",
+            "getprop",
+            $property
+        )
+
+    Write-Host "${property}: $value"
 }
 
-$size = (adb -s $serial shell wm size).Trim()
-Write-Host "$size"
+$size =
+    Invoke-AdbCapture -Arguments @(
+        "-s",
+        $serial,
+        "shell",
+        "wm",
+        "size"
+    )
 
-$density = (adb -s $serial shell wm density).Trim()
-Write-Host "$density"
+$density =
+    Invoke-AdbCapture -Arguments @(
+        "-s",
+        $serial,
+        "shell",
+        "wm",
+        "density"
+    )
+
+Write-Host $size
+Write-Host $density

@@ -3,48 +3,69 @@ set -euo pipefail
 
 DEVICE_SERIAL=""
 
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --device-serial)
-      DEVICE_SERIAL="$2"
-      shift
-      shift
-      ;;
-    *)
-      shift
-      ;;
-  esac
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --device-serial)
+            if [[ "$#" -lt 2 ]]; then
+                echo "Missing value for --device-serial."
+                exit 1
+            fi
+
+            DEVICE_SERIAL="$2"
+            shift 2
+            ;;
+
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
 done
 
-if ! command -v adb &> /dev/null; then
+if ! command -v adb >/dev/null 2>&1; then
     echo "ADB not found."
     exit 1
 fi
 
-CONNECTED_DEVICES=$(adb devices | grep -E "\tdevice$" | cut -f1)
+mapfile -t CONNECTED_SERIALS < <(
+    adb devices |
+    awk 'NR > 1 && $2 == "device" { print $1 }'
+)
 
-if [ -n "$DEVICE_SERIAL" ]; then
-    if ! echo "$CONNECTED_DEVICES" | grep -v '^$' | grep -q "^$DEVICE_SERIAL$"; then
-        echo "Device $DEVICE_SERIAL not found or not in 'device' state."
+if [[ -n "$DEVICE_SERIAL" ]]; then
+    FOUND=false
+
+    for connected in "${CONNECTED_SERIALS[@]}"; do
+        if [[ "$connected" == "$DEVICE_SERIAL" ]]; then
+            FOUND=true
+            break
+        fi
+    done
+
+    if [[ "$FOUND" != true ]]; then
+        echo "Device $DEVICE_SERIAL not found or not in device state."
         exit 1
     fi
-    SERIAL=$DEVICE_SERIAL
+
+    SERIAL="$DEVICE_SERIAL"
 else
-    DEVICE_COUNT=$(echo "$CONNECTED_DEVICES" | grep -v '^$' | wc -l)
-    if [ "$DEVICE_COUNT" -eq 0 ]; then
-        echo "No devices connected."
+    if [[ "${#CONNECTED_SERIALS[@]}" -eq 0 ]]; then
+        echo "No Android device is connected."
         exit 1
     fi
-    if [ "$DEVICE_COUNT" -gt 1 ]; then
-        echo "Multiple devices found. Specify --device-serial."
+
+    if [[ "${#CONNECTED_SERIALS[@]}" -gt 1 ]]; then
+        echo "Multiple Android devices found. Specify --device-serial."
         exit 1
     fi
-    SERIAL=$(echo "$CONNECTED_DEVICES" | xargs)
+
+    SERIAL="${CONNECTED_SERIALS[0]}"
 fi
 
-echo "--- Device Info: $SERIAL ---"
+echo "--- Device Info ---"
+echo "Serial: $SERIAL"
 
-PROPS=(
+PROPERTIES=(
     "ro.product.manufacturer"
     "ro.product.model"
     "ro.build.version.release"
@@ -53,9 +74,14 @@ PROPS=(
     "ro.build.version.incremental"
 )
 
-for prop in "${PROPS[@]}"; do
-    val=$(adb -s "$SERIAL" shell getprop "$prop")
-    echo "$prop: $val"
+for property in "${PROPERTIES[@]}"; do
+    value="$(
+        adb -s "$SERIAL" \
+            shell getprop "$property" |
+        tr -d '\r'
+    )"
+
+    echo "$property: $value"
 done
 
 adb -s "$SERIAL" shell wm size

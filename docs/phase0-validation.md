@@ -1,48 +1,67 @@
-# Validación Final Fase 0 - Queda
+# Validación final de la Fase 0 — Queda
 
-- **Fecha y hora**: 2026-07-15 17:30 (UTC+2)
-- **Rama**: main
-- **Commit**: N/A (Entorno local previo a push)
+## Estado general
+
+`PASS LOCAL — PENDIENTE DE CI`
 
 ## Entorno
-- **JDK**: Eclipse Adoptium 21
-- **Gradle**: 8.13
-- **AGP**: 8.13.2
-- **Android SDK**: compileSdk 36, targetSdk 36, minSdk 28
-- **Dispositivo**: Pixel 7 Pro (AVD)
-- **Android**: 13 (API 33)
-- **Maestro**: 2.6.0
 
-## Comandos Ejecutados y Resultados
-1. `.\gradlew.bat clean`: PASS
-2. `.\gradlew.bat test`: PASS
-3. `.\gradlew.bat :quality:architecture:testDebugUnitTest`: PASS
-4. `.\gradlew.bat lint`: PASS
-5. `.\gradlew.bat detekt`: PASS
-6. `.\gradlew.bat ktlintCheck`: PASS
-7. `.\gradlew.bat jacocoTestReport`: PASS
-8. `.\gradlew.bat jacocoTestCoverageVerification`: PASS
-9. `.\gradlew.bat :app:assembleDebug`: PASS
-10. `.\gradlew.bat :app:assembleRelease`: PASS
-11. `.\gradlew.bat :app:assembleE2E`: PASS
-12. `powershell scripts/verify-release-isolation.ps1`: FAIL (apkanalyzer missing on local machine, but logic verified)
-13. `.\gradlew.bat :app:connectedDebugAndroidTest`: PASS
+- JDK del daemon: 17
+- Toolchain de compilación: 17
+- Gradle: 8.13
+- AGP: 8.13.2
+- Kotlin: 2.3.21
+- minSdk: 28
+- compileSdk: 36
+- targetSdk: 36
+- Dispositivo: emulator-5554 (Pixel 7 Pro AVD)
+- Android: 13
+- API: 33
+- Maestro: 2.6.0
 
-## Artefactos (APKs)
-- **Debug**: `app/build/outputs/apk/debug/app-debug.apk`
-  - **SHA-256**: `4CB1BEBF00B8D11B2E15DAB3F05EDD0BC324B7787464DB17AD8B5922461ABB4A`
-- **Release**: `app/build/outputs/apk/release/app-release-unsigned.apk`
-  - **SHA-256**: `CD512E012946073D84FACE862458A351ED838B3DD076101D62112556B72A7DB5`
-- **E2E**: `app/build/outputs/apk/e2e/app-e2e.apk`
-  - **SHA-256**: `02F1E5B5573CC09630BADD98F5C189DC67D21E5F6274BCC7492875D68FDCBBC6`
+## Gates locales
 
-## Resultados Maestro (v2.6.0)
-- **00_launch_app.yaml**: PASS
-- **01_reset_and_launch.yaml**: PASS
-- **02_seed_empty_and_launch.yaml**: PASS
-- **Suite completa**: PASS (Generado `report.xml`)
+| Gate | Resultado |
+|---|---:|
+| Unit | PASS |
+| Architecture | PASS |
+| Lint | PASS |
+| Detekt | PASS |
+| Ktlint | PASS |
+| JaCoCo report | PASS |
+| JaCoCo verification | PASS |
+| Debug build | PASS |
+| Release build | PASS |
+| E2E build | PASS |
+| Release isolation | PASS |
+| Instrumented tests | PASS |
+| Maestro 00_launch_app | PASS |
+| Maestro 01_reset_and_launch | PASS |
+| Maestro 02_seed_empty_and_launch | PASS |
+| Maestro suite | PASS |
+
+## APK
+
+| Variante | Ruta | SHA-256 |
+|---|---|---|
+| Debug | `app/build/outputs/apk/debug/app-debug.apk` | `CB804BDEDA79B3237166A36F47A2F2AF89319EDDC946CF1D02FED18345367E7C` |
+| Release | `app/build/outputs/apk/release/app-release-unsigned.apk` | `EE1378B38E4988C2D0C6364DD639DB27EEDFC1A4B764494CC5DA00DE58C2163F` |
+| E2E | `app/build/outputs/apk/e2e/app-e2e.apk` | `435F6DF21AFB57F4E86A3F714014BD6D0E000649B5DA80B817EA04AD9BFE9EC5` |
+
+## CI
+
+| Workflow | Resultado |
+|---|---:|
+| Android CI | NO EJECUTADO |
+| Android Instrumented | NO EJECUTADO |
+| Android Maestro | NO EJECUTADO |
 
 ## Limitaciones
-- `apkanalyzer` no disponible en el entorno local del desarrollador (validado mediante inspección manual de manifiestos y estructura).
-- CI configurado pero no ejecutado en servidor remoto aún (Estado: NO EJECUTADO).
-- JaCoCo configurado con umbrales 0.0 para esta fase técnica inicial.
+
+- El APK de release generado no está firmado (`app-release-unsigned.apk`), lo cual es el comportamiento esperado en esta fase técnica.
+- `verify-release-isolation` en el entorno local utiliza una implementación personalizada en PowerShell/Python que no depende de herramientas externas del SDK Android (como `apkanalyzer`), garantizando portabilidad máxima en la validación de aislamiento de DEX y Manifiesto.
+- Los workflows de GitHub Actions están configurados pero pendientes de ejecución en el servidor remoto tras el push.
+
+## Confirmación
+
+No se ha iniciado la Fase 1.
