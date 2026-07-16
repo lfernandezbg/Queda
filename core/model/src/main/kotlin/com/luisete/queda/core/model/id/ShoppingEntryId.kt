@@ -5,11 +5,11 @@ import java.util.UUID
 @JvmInline
 value class ShoppingEntryId private constructor(val value: String) {
     companion object {
-        fun newId(): ShoppingEntryId = ShoppingEntryId(UUID.randomUUID().toString())
-
         fun from(value: String): ShoppingEntryId {
-            require(value.isNotBlank()) { "ShoppingEntryId cannot be empty or blank" }
+            require(value.isNotBlank()) { "ShoppingEntryId cannot be blank" }
             return ShoppingEntryId(value)
         }
+
+        fun newId(): ShoppingEntryId = ShoppingEntryId(UUID.randomUUID().toString())
     }
 }

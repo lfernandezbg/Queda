@@ -2,119 +2,144 @@ package com.luisete.queda.core.domain.quantity
 
 import com.luisete.queda.core.domain.result.DomainError
 import com.luisete.queda.core.domain.result.DomainResult
+import com.luisete.queda.core.domain.result.Failure
+import com.luisete.queda.core.domain.result.Success
 import com.luisete.queda.core.model.quantity.ApproximateLevel
 import com.luisete.queda.core.model.quantity.ApproximateQuantity
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.QuantityDimension
 import java.math.BigDecimal
 
-@Suppress("SwallowedException", "ReturnCount", "MaxLineLength")
+@Suppress("TooManyFunctions")
 object QuantityOperations {
-    private val KILO_FACTOR = BigDecimal("1000")
+    private val BASE_FACTOR = BigDecimal("1000")
 
     fun convert(
         quantity: ExactQuantity,
         targetUnit: MeasurementUnit,
-    ): DomainResult<ExactQuantity> {
-        if (quantity.unit == targetUnit) return DomainResult.Success(quantity)
-        if (quantity.unit.dimension != targetUnit.dimension) {
-            return DomainResult.Failure(DomainError.IncompatibleQuantityDimensions)
-        }
-
-        val amount = quantity.amount
-        val convertedAmount =
-            when {
-                quantity.unit == MeasurementUnit.GRAM && targetUnit == MeasurementUnit.KILOGRAM ->
-                    amount.divide(KILO_FACTOR)
-
-                quantity.unit == MeasurementUnit.KILOGRAM && targetUnit == MeasurementUnit.GRAM ->
-                    amount.multiply(KILO_FACTOR)
-
-                quantity.unit == MeasurementUnit.MILLILITER && targetUnit == MeasurementUnit.LITER ->
-                    amount.divide(KILO_FACTOR)
-
-                quantity.unit == MeasurementUnit.LITER && targetUnit == MeasurementUnit.MILLILITER ->
-                    amount.multiply(KILO_FACTOR)
-
-                else -> return DomainResult.Failure(DomainError.IncompatibleQuantityDimensions)
+    ): DomainResult<ExactQuantity> =
+        when {
+            quantity.unit == targetUnit -> Success(quantity)
+            quantity.unit.dimension != targetUnit.dimension ->
+                Failure(
+                    DomainError.IncompatibleQuantityDimensions,
+                )
+            else -> {
+                val amountInBase =
+                    toBaseUnitAmount(
+                        amount = quantity.amount,
+                        unit = quantity.unit,
+                    )
+                val targetAmount =
+                    fromBaseUnitAmount(
+                        amountInBase = amountInBase,
+                        targetUnit = targetUnit,
+                    )
+                createExactResult(
+                    amount = targetAmount,
+                    unit = targetUnit,
+                )
             }
-
-        return try {
-            DomainResult.Success(ExactQuantity.of(convertedAmount, targetUnit))
-        } catch (e: IllegalArgumentException) {
-            DomainResult.Failure(DomainError.TooManyDecimalPlaces)
-        } catch (e: ArithmeticException) {
-            // In case of non-terminating decimal expansion, though not possible with 1000
-            DomainResult.Failure(DomainError.TooManyDecimalPlaces)
         }
-    }
 
     fun add(
-        q1: ExactQuantity,
-        q2: ExactQuantity,
+        left: ExactQuantity,
+        right: ExactQuantity,
     ): DomainResult<ExactQuantity> {
-        val convertedQ2 = convert(q2, q1.unit)
-        return when (convertedQ2) {
-            is DomainResult.Success -> {
-                try {
-                    DomainResult.Success(ExactQuantity.of(q1.amount.add(convertedQ2.value.amount), q1.unit))
-                } catch (e: IllegalArgumentException) {
-                    DomainResult.Failure(DomainError.TooManyDecimalPlaces)
-                }
-            }
-
-            is DomainResult.Failure -> convertedQ2
+        if (left.unit.dimension != right.unit.dimension) {
+            return Failure(
+                DomainError.IncompatibleQuantityDimensions,
+            )
         }
+
+        val resultInBase =
+            toBaseUnitAmount(left.amount, left.unit)
+                .add(
+                    toBaseUnitAmount(
+                        right.amount,
+                        right.unit,
+                    ),
+                )
+
+        return resolveMixedResult(
+            amountInBase = resultInBase,
+            preferredUnit = left.unit,
+        )
     }
 
     fun subtract(
-        q1: ExactQuantity,
-        q2: ExactQuantity,
-    ): DomainResult<ExactQuantity> {
-        val convertedQ2 = convert(q2, q1.unit)
-        return when (convertedQ2) {
-            is DomainResult.Success -> {
-                val resultAmount = q1.amount.subtract(convertedQ2.value.amount)
-                if (resultAmount < BigDecimal.ZERO) {
-                    DomainResult.Failure(DomainError.NegativeQuantity)
+        left: ExactQuantity,
+        right: ExactQuantity,
+    ): DomainResult<ExactQuantity> =
+        when {
+            left.unit.dimension != right.unit.dimension ->
+                Failure(
+                    DomainError.IncompatibleQuantityDimensions,
+                )
+            else -> {
+                val resultInBase =
+                    toBaseUnitAmount(left.amount, left.unit)
+                        .subtract(toBaseUnitAmount(right.amount, right.unit))
+
+                if (resultInBase.signum() < 0) {
+                    Failure(DomainError.NegativeQuantity)
                 } else {
-                    try {
-                        DomainResult.Success(ExactQuantity.of(resultAmount, q1.unit))
-                    } catch (e: IllegalArgumentException) {
-                        DomainResult.Failure(DomainError.TooManyDecimalPlaces)
-                    }
+                    resolveMixedResult(
+                        amountInBase = resultInBase,
+                        preferredUnit = left.unit,
+                    )
                 }
             }
-
-            is DomainResult.Failure -> convertedQ2
         }
-    }
 
     fun consume(
         available: ExactQuantity,
         toConsume: ExactQuantity,
-    ): DomainResult<ExactQuantity> {
-        val result = subtract(available, toConsume)
-        return if (result is DomainResult.Failure && result.error == DomainError.NegativeQuantity) {
-            DomainResult.Failure(DomainError.InsufficientQuantity)
-        } else {
-            result
+    ): DomainResult<ExactQuantity> =
+        when {
+            available.unit.dimension != toConsume.unit.dimension ->
+                Failure(
+                    DomainError.IncompatibleQuantityDimensions,
+                )
+            else -> {
+                val availableInBase =
+                    toBaseUnitAmount(
+                        available.amount,
+                        available.unit,
+                    )
+                val consumptionInBase =
+                    toBaseUnitAmount(
+                        toConsume.amount,
+                        toConsume.unit,
+                    )
+
+                if (consumptionInBase > availableInBase) {
+                    Failure(DomainError.InsufficientQuantity)
+                } else {
+                    resolveMixedResult(
+                        amountInBase = availableInBase.subtract(consumptionInBase),
+                        preferredUnit = available.unit,
+                    )
+                }
+            }
         }
-    }
 
     fun correct(
+        current: ExactQuantity,
         newAmount: BigDecimal,
         newUnit: MeasurementUnit,
     ): DomainResult<ExactQuantity> {
-        return try {
-            DomainResult.Success(ExactQuantity.of(newAmount, newUnit))
-        } catch (e: IllegalArgumentException) {
-            if (newAmount < BigDecimal.ZERO) {
-                DomainResult.Failure(DomainError.NegativeQuantity)
-            } else {
-                DomainResult.Failure(DomainError.TooManyDecimalPlaces)
-            }
+        if (current.unit.dimension != newUnit.dimension) {
+            return Failure(
+                DomainError.IncompatibleQuantityDimensions,
+            )
         }
+
+        return createExactResult(
+            amount = newAmount,
+            unit = newUnit,
+        )
     }
 
     fun consumeApproximate(
@@ -122,12 +147,102 @@ object QuantityOperations {
         targetLevel: ApproximateLevel,
     ): DomainResult<ApproximateQuantity> {
         if (targetLevel.order >= current.level.order) {
-            return DomainResult.Failure(DomainError.ApproximateLevelDidNotDecrease)
+            return Failure(
+                DomainError.ApproximateLevelDidNotDecrease,
+            )
         }
-        return DomainResult.Success(ApproximateQuantity(targetLevel))
+
+        return Success(
+            ApproximateQuantity(targetLevel),
+        )
     }
 
-    fun correctApproximate(newLevel: ApproximateLevel): DomainResult<ApproximateQuantity> {
-        return DomainResult.Success(ApproximateQuantity(newLevel))
+    fun correctApproximate(targetLevel: ApproximateLevel): DomainResult<ApproximateQuantity> =
+        Success(
+            ApproximateQuantity(targetLevel),
+        )
+
+    private fun createExactResult(
+        amount: BigDecimal,
+        unit: MeasurementUnit,
+    ): DomainResult<ExactQuantity> =
+        when {
+            amount.signum() < 0 -> Failure(DomainError.NegativeQuantity)
+            !ExactQuantity.isRepresentable(amount) -> Failure(DomainError.TooManyDecimalPlaces)
+            else ->
+                Success(
+                    ExactQuantity.of(
+                        amount = amount,
+                        unit = unit,
+                    ),
+                )
+        }
+
+    private fun resolveMixedResult(
+        amountInBase: BigDecimal,
+        preferredUnit: MeasurementUnit,
+    ): DomainResult<ExactQuantity> {
+        val amountInPreferred =
+            fromBaseUnitAmount(
+                amountInBase = amountInBase,
+                targetUnit = preferredUnit,
+            )
+
+        if (
+            ExactQuantity.isRepresentable(
+                amountInPreferred,
+            )
+        ) {
+            return Success(
+                ExactQuantity.of(
+                    amount = amountInPreferred,
+                    unit = preferredUnit,
+                ),
+            )
+        }
+
+        val baseUnit =
+            baseUnitFor(preferredUnit.dimension)
+
+        return createExactResult(
+            amount = amountInBase,
+            unit = baseUnit,
+        )
     }
+
+    private fun toBaseUnitAmount(
+        amount: BigDecimal,
+        unit: MeasurementUnit,
+    ): BigDecimal =
+        when (unit) {
+            MeasurementUnit.KILOGRAM,
+            MeasurementUnit.LITER,
+            -> amount.multiply(BASE_FACTOR)
+
+            else -> amount
+        }
+
+    private fun fromBaseUnitAmount(
+        amountInBase: BigDecimal,
+        targetUnit: MeasurementUnit,
+    ): BigDecimal =
+        when (targetUnit) {
+            MeasurementUnit.KILOGRAM,
+            MeasurementUnit.LITER,
+            -> amountInBase.divide(BASE_FACTOR)
+
+            else -> amountInBase
+        }
+
+    private fun baseUnitFor(dimension: QuantityDimension): MeasurementUnit =
+        when (dimension) {
+            QuantityDimension.COUNT ->
+                MeasurementUnit.UNIT
+
+            QuantityDimension.MASS ->
+                MeasurementUnit.GRAM
+
+            QuantityDimension.VOLUME ->
+                MeasurementUnit.MILLILITER
+        }
 }

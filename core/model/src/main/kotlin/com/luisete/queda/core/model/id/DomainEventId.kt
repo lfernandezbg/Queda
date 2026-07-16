@@ -5,11 +5,11 @@ import java.util.UUID
 @JvmInline
 value class DomainEventId private constructor(val value: String) {
     companion object {
-        fun newId(): DomainEventId = DomainEventId(UUID.randomUUID().toString())
-
         fun from(value: String): DomainEventId {
-            require(value.isNotBlank()) { "DomainEventId cannot be empty or blank" }
+            require(value.isNotBlank()) { "DomainEventId cannot be blank" }
             return DomainEventId(value)
         }
+
+        fun newId(): DomainEventId = DomainEventId(UUID.randomUUID().toString())
     }
 }

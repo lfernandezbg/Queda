@@ -2,12 +2,6 @@
 
 Estas preguntas no deben bloquear el inicio, pero deben cerrarse antes de implementar el bloque afectado.
 
-## Cantidades
-
-- ¿Se permiten cantidades exactas fraccionarias para `UNIT`?
-- ¿Qué escala decimal máxima se acepta?
-- ¿Cómo se expresa “usar un poco” en modo aproximado: transición fija o nivel objetivo?
-
 ## Lotes
 
 - ¿V1 permite dividir una existencia?

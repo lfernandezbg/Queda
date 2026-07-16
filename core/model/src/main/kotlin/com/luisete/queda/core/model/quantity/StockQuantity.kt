@@ -16,45 +16,65 @@ class ExactQuantity private constructor(
 
     override fun hashCode(): Int {
         var result = amount.stripTrailingZeros().hashCode()
-        result = 31 * result + unit.hashCode()
+        result = HASH_MULTIPLIER * result + unit.hashCode()
         return result
     }
 
     override fun toString(): String = "${amount.toPlainString()} ${unit.name}"
 
     companion object {
-        private const val MAX_DECIMALS = 3
+        const val MAX_DECIMAL_PLACES = 3
+
+        private const val HASH_MULTIPLIER = 31
+
+        fun isRepresentable(amount: BigDecimal): Boolean {
+            if (amount.signum() < 0) return false
+            return normalize(amount).scale() <= MAX_DECIMAL_PLACES
+        }
 
         fun of(
             amount: BigDecimal,
             unit: MeasurementUnit,
         ): ExactQuantity {
-            require(amount >= BigDecimal.ZERO) { "Amount cannot be negative" }
-
-            val normalized =
-                if (amount.compareTo(BigDecimal.ZERO) == 0) {
-                    BigDecimal.ZERO.setScale(0)
-                } else {
-                    amount.stripTrailingZeros()
-                }
-
-            require(normalized.scale() <= MAX_DECIMALS) {
-                "Amount cannot have more than $MAX_DECIMALS decimal places"
+            require(amount.signum() >= 0) {
+                "Amount cannot be negative"
             }
 
-            return ExactQuantity(normalized, unit)
+            val normalized = normalize(amount)
+
+            require(normalized.scale() <= MAX_DECIMAL_PLACES) {
+                "Amount cannot have more than " +
+                    "$MAX_DECIMAL_PLACES decimal places"
+            }
+
+            return ExactQuantity(
+                amount = normalized,
+                unit = unit,
+            )
         }
 
         fun of(
             amount: String,
             unit: MeasurementUnit,
         ): ExactQuantity {
-            return try {
-                of(BigDecimal(amount), unit)
-            } catch (e: NumberFormatException) {
-                throw IllegalArgumentException("Invalid amount format: $amount", e)
-            }
+            val decimal =
+                amount.toBigDecimalOrNull()
+                    ?: throw IllegalArgumentException(
+                        "Invalid amount format: $amount",
+                    )
+
+            return of(
+                amount = decimal,
+                unit = unit,
+            )
         }
+
+        private fun normalize(amount: BigDecimal): BigDecimal =
+            if (amount.signum() == 0) {
+                BigDecimal.ZERO
+            } else {
+                amount.stripTrailingZeros()
+            }
     }
 }
 

@@ -1,11 +1,17 @@
 package com.luisete.queda.core.model.quantity
 
-@Suppress("MagicNumber")
+private const val ORDER_EMPTY = 0
+private const val ORDER_ALMOST_EMPTY = 1
+private const val ORDER_LOW = 2
+private const val ORDER_MEDIUM = 3
+private const val ORDER_HIGH = 4
+private const val ORDER_FULL = 5
+
 enum class ApproximateLevel(val order: Int) {
-    EMPTY(0),
-    ALMOST_EMPTY(1),
-    LOW(2),
-    MEDIUM(3),
-    HIGH(4),
-    FULL(5),
+    EMPTY(ORDER_EMPTY),
+    ALMOST_EMPTY(ORDER_ALMOST_EMPTY),
+    LOW(ORDER_LOW),
+    MEDIUM(ORDER_MEDIUM),
+    HIGH(ORDER_HIGH),
+    FULL(ORDER_FULL),
 }

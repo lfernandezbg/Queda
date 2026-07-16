@@ -1,18 +1,39 @@
-# Matriz inicial de tests de dominio
+# Testing Matrix - Phase 1.1
 
-| Regla | Tipo de test |
-|---|---|
-| Cantidad exacta no negativa | Unit + property |
-| Consumo nunca supera disponible | Unit + property |
-| Conversión solo dentro de dimensión | Unit |
-| Nivel aproximado válido | Unit |
-| Existencia y producto del mismo hogar | Unit |
-| Movimiento entre hogares rechazado | Unit |
-| Abrir dos veces rechazado o idempotente según API | Unit |
-| Inactivo no admite operaciones | Unit |
-| Orden FEFO determinista | Unit + property |
-| Vencido antes que futuro | Unit |
-| Abierto como desempate | Unit |
-| Completar compra no crea stock | Unit |
-| Sugerencia de compra idempotente | Unit + property |
-| Eventos conservan orden y datos | Unit |
+## JVM Unit Tests (core:model & core:domain)
+
+| Suite | Goal | Tests | Status |
+| :--- | :--- | :---: | :---: |
+| **Identifiers** | Non-blank, UUID-backed, encapsulated value classes. | 36 | |
+| **Quantity Model** | Normalization, 3-decimal limit, BigDecimal usage. | 29 | |
+| **Operations** | Arithmetic, conversions, fallback logic, approximate rules. | 71 | |
+| **Property-Based** | 16 Invariants verified with 1,000 random iterations each. | 16 | |
+| **Integration** | Multi-step domain sequences, state consistency. | 12 | |
+| **Regression** | Verification of fixes for edge cases (fallback precision). | 12 | |
+| **Architecture** | Protection of Kotlin pure domain, isolation rules. | 12 | |
+
+**Total JVM Methods**: 188  
+**Property Iterations**: 16,000  
+**Seed**: 20260715L
+
+## Instrumented Tests (app)
+
+| Suite | Goal | Tests | Status |
+| :--- | :--- | :---: | :---: |
+| **App Shell** | Basic activity launch and navigation shell. | 1 | |
+
+## Maestro Smoke Suite (.maestro)
+
+| Flow | Goal | Status |
+| :--- | :--- | :---: |
+| **00_launch_app** | App starts and displays main screen. | |
+| **01_reset_and_launch** | App handles data reset and restart. | |
+| **02_seed_empty_and_launch** | App handles empty state. | |
+
+## Quality Gates
+
+- **Lint**: No errors in app or core modules.
+- **Detekt**: No violations. Suppressions only in ArchitectureTest (Phase 0).
+- **Ktlint**: Strict formatting enforced.
+- **JaCoCo**: Coverage reports generated for new domain logic.
+- **Release Isolation**: No E2E or test-only tokens in release builds.

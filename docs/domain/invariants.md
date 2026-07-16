@@ -1,63 +1,57 @@
-# Invariantes del dominio
+# Domain Invariants
 
-## Identidad y pertenencia
+## Identity and Ownership
+1. Every aggregate has a non-blank identifier.
+2. A stock item belongs to a single household.
+3. A product belongs to a single household.
+4. A location belongs to a single household.
+5. A stock item references a product from the same household.
+6. A stock item can only be in one location of the same household.
 
-1. Todo agregado tiene un identificador no vacío.
-2. Una existencia pertenece a un único hogar.
-3. Un producto pertenece a un único hogar.
-4. Una ubicación pertenece a un único hogar.
-5. Una existencia referencia un producto del mismo hogar.
-6. Una existencia solo puede estar en una ubicación del mismo hogar.
+## Quantity
+7. An exact quantity can never be negative.
+8. A zero exact quantity represents operational depletion. Zero is internally normalized.
+9. An approximate quantity always uses a known level.
+10. A stock item uses a single quantity mode at any time: exact or approximate.
+11. Consuming can never exceed the exact quantity available.
+12. A correction can increase or decrease, but never produce an invalid quantity.
+13. Incompatible dimensions (e.g., MASS vs VOLUME) cannot be combined.
+14. Exact calculations use safe decimal representation (BigDecimal); Double or Float are forbidden.
+15. No compatible operation loses precision; if the output unit cannot represent it (max 3 decimals), the base unit is used.
+16. Domain operations do not modify the original objects (immutability).
+17. Approximate consumption requires the target level to be strictly lower than the current one.
+18. Exact quantities are limited to 3 decimal places.
 
-## Cantidad
+## State
+19. A discarded or depleted stock item is not active.
+20. An inactive stock item cannot be consumed or opened.
+21. An open stock item cannot be closed via normal operations.
+22. Opening date cannot exist if the state is closed.
+23. An operation cannot have a date earlier than the stock item creation.
+24. Discarding is distinct from consumption.
+25. Correction is distinct from consumption or discarding.
 
-7. Una cantidad exacta nunca puede ser negativa.
-8. Una cantidad exacta cero representa agotamiento operativo.
-9. Una cantidad aproximada siempre utiliza un nivel conocido.
-10. Una existencia usa un único modo de cantidad en cada instante: exacto o aproximado.
-11. Consumir nunca puede superar la cantidad exacta disponible.
-12. Una corrección puede aumentar o reducir, pero nunca producir una cantidad inválida.
-13. Las unidades incompatibles no pueden sumarse.
-14. Los cálculos exactos usan representación decimal segura, no `Float` ni `Double`.
+## Dates
+26. Expiration date and best-before date are distinct concepts.
+27. If both exist, strict expiration has priority for safety.
+28. Opening date cannot be later than the operation moment.
+29. Unknown dates are represented as absence, not default values.
 
-## Estado
+## Locations
+30. Location is optional.
+31. Deleting a location with active stock items requires an explicit policy (transfer or leave as unknown).
+32. Moving a stock item preserves its identity and quantity.
 
-15. Una existencia descartada o agotada no está activa.
-16. Una existencia inactiva no puede consumirse ni abrirse.
-17. Una existencia abierta no puede volver a cerrarse mediante una operación normal.
-18. La fecha de apertura no puede existir si el estado es cerrado.
-19. Una operación no puede tener una fecha anterior a la creación de la existencia.
-20. El descarte no se confunde con consumo.
-21. La corrección no se confunde con consumo ni descarte.
+## History
+33. Relevant domain actions generate immutable events.
+34. History is not modified to hide corrections.
+35. Undoing an action creates a compensatory action; it does not erase the original event.
 
-## Fechas
+## Priority
+36. Consumption priority is deterministic for the same inputs.
+37. An expired stock item never has lower urgency than a future one.
+38. When dates are equal, an open stock item is prioritized over a closed one.
+39. When all factors are equal, a stable criterion is used to avoid random ordering.
 
-22. La fecha de caducidad y la fecha de consumo preferente son conceptos distintos.
-23. Si ambas existen, la caducidad estricta tiene prioridad de seguridad.
-24. La fecha de apertura no puede ser posterior al momento de la operación.
-25. Las fechas desconocidas se representan como ausencia, no como valores inventados.
-
-## Ubicaciones
-
-26. La ubicación es opcional.
-27. Eliminar una ubicación con existencias activas requiere una política explícita de traslado o dejar ubicación desconocida.
-28. Mover una existencia conserva su identidad y cantidad.
-
-## Historial
-
-29. Las acciones de dominio relevantes generan eventos inmutables.
-30. El historial no se modifica para ocultar correcciones.
-31. Deshacer una acción crea una acción compensatoria; no borra el evento original.
-
-## Prioridad
-
-32. La prioridad de consumo es determinista para las mismas entradas.
-33. Una caducidad vencida nunca recibe menor urgencia que una futura.
-34. A igualdad de fecha, una existencia abierta se prioriza antes que una cerrada.
-35. A igualdad completa, se usa un criterio estable para evitar orden aleatorio.
-
-## Lista de compra
-
-36. Una entrada de compra nunca altera el inventario.
-37. Marcar una entrada como comprada no crea automáticamente una existencia sin confirmación explícita.
-38. No se generan cantidades negativas ni sugerencias duplicadas para el mismo objetivo lógico.
+## Shopping List
+40. A shopping entry never alters the inventory directly without explicit confirmation.
