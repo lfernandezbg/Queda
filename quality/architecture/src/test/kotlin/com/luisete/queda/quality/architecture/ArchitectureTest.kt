@@ -24,6 +24,8 @@ class ArchitectureTest {
             listOf(
                 "com.luisete.queda.core.designsystem.QuedaTestTags",
                 "com.luisete.queda.core.testing.E2ECommandParser",
+                "com.luisete.queda.core.model.quantity.ExactQuantity",
+                "com.luisete.queda.core.domain.quantity.QuantityOperations",
             )
         requiredClasses.forEach { fqName ->
             assertTrue(
@@ -37,7 +39,6 @@ class ArchitectureTest {
     fun `core model should not depend on android`() {
         noClasses().that().resideInAPackage("..core.model..")
             .should().dependOnClassesThat().resideInAPackage("android..")
-            .allowEmptyShould(true)
             .check(allProjectClasses)
     }
 
@@ -47,7 +48,6 @@ class ArchitectureTest {
             .should().dependOnClassesThat().resideInAPackage("android..")
             .orShould().dependOnClassesThat().resideInAPackage("androidx..")
             .orShould().dependOnClassesThat().resideInAPackage("androidx.room..")
-            .allowEmptyShould(true)
             .check(allProjectClasses)
     }
 
@@ -218,5 +218,60 @@ class ArchitectureTest {
         requiredModules.forEach { module ->
             assertTrue("Module $module missing in settings.gradle.kts", content.contains("include(\"$module\")"))
         }
+    }
+
+    @Test
+    fun `quantity domain must not use floating point`() {
+        val files =
+            requiredKotlinFiles(
+                listOf(
+                    "core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/",
+                    "core/domain/src/main/kotlin/com/luisete/queda/core/domain/quantity/",
+                ),
+            )
+
+        files.forEach { file ->
+            val content = file.readText()
+            assertFalse("File ${file.path} uses Double", content.contains("Double"))
+            assertFalse("File ${file.path} uses Float", content.contains("Float"))
+            assertFalse("File ${file.path} uses toDouble", content.contains("toDouble"))
+            assertFalse("File ${file.path} uses toFloat", content.contains("toFloat"))
+        }
+    }
+
+    @Test
+    fun `quantity domain must not use enum ordinal or forbidden abstractions`() {
+        val files =
+            requiredKotlinFiles(
+                listOf(
+                    "core/model/src/main/kotlin/com/luisete/queda/core/model/id/",
+                    "core/model/src/main/kotlin/com/luisete/queda/core/model/quantity/",
+                    "core/domain/src/main/kotlin/com/luisete/queda/core/domain/quantity/",
+                    "core/domain/src/main/kotlin/com/luisete/queda/core/domain/result/",
+                ),
+            )
+
+        files.forEach { file ->
+            val content = file.readText()
+            assertFalse("File ${file.path} uses enum ordinal", content.contains(".ordinal"))
+            assertFalse("File ${file.path} contains InvalidQuantityText", content.contains("InvalidQuantityText"))
+            assertFalse("File ${file.path} contains GenericId", content.contains("GenericId"))
+            assertFalse("File ${file.path} contains GenericError", content.contains("GenericError"))
+        }
+    }
+
+    private fun requiredKotlinFiles(relativePaths: List<String>): List<File> {
+        val root = File(rootPath)
+        val result =
+            relativePaths.flatMap { relativePath ->
+                val directory = File(root, relativePath)
+                assertTrue("Required source directory does not exist: " + directory.path, directory.exists())
+                assertTrue("Required source path is not a directory: " + directory.path, directory.isDirectory)
+                val files = directory.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+                assertTrue("No Kotlin production files found in: " + directory.path, files.isNotEmpty())
+                files
+            }
+        assertTrue("No production Kotlin files were inspected", result.isNotEmpty())
+        return result
     }
 }

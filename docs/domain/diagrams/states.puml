@@ -1,0 +1,15 @@
+@startuml
+[*] --> ACTIVE_CLOSED
+
+ACTIVE_CLOSED --> ACTIVE_OPEN : open
+ACTIVE_CLOSED --> DEPLETED : consume/correct to zero
+ACTIVE_CLOSED --> DISCARDED : discard
+
+ACTIVE_OPEN --> DEPLETED : consume/correct to zero
+ACTIVE_OPEN --> DISCARDED : discard
+
+DEPLETED --> ARCHIVED : archive
+DISCARDED --> ARCHIVED : archive
+
+ARCHIVED --> [*]
+@enduml
