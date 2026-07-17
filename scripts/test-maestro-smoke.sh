@@ -21,7 +21,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "--- Phase 0: Maestro Smoke ---"
+echo "--- Iteration 1: Maestro Smoke ---"
 
 rm -rf .maestro/results
 mkdir -p .maestro/results
@@ -88,6 +88,15 @@ FLOWS=(
     ".maestro/flows/smoke/00_launch_app.yaml"
     ".maestro/flows/smoke/01_reset_and_launch.yaml"
     ".maestro/flows/smoke/02_seed_empty_and_launch.yaml"
+    ".maestro/flows/smoke/03_inventory_empty_state.yaml"
+    ".maestro/flows/smoke/04_add_exact_unit_item.yaml"
+    ".maestro/flows/smoke/05_add_exact_mass_item.yaml"
+    ".maestro/flows/smoke/06_add_exact_volume_comma_item.yaml"
+    ".maestro/flows/smoke/07_add_exact_item_validation.yaml"
+    ".maestro/flows/smoke/08_duplicate_normalized_name.yaml"
+    ".maestro/flows/smoke/09_cancel_add_item.yaml"
+    ".maestro/flows/smoke/10_multiple_items_visible.yaml"
+    ".maestro/flows/smoke/11_item_persists_after_relaunch.yaml"
 )
 
 for flow in "${FLOWS[@]}"; do

@@ -2,6 +2,6 @@ appId: com.luisete.queda.e2e
 ---
 - openLink: "queda-e2e://seed/empty"
 - assertVisible:
-    id: "app_root"
+    id: "inventory_screen"
 - assertVisible:
-    id: "screen_foundation"
+    id: "inventory_empty_state"
