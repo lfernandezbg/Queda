@@ -9,6 +9,7 @@
     <string name="inventory_empty_body">Añade tu primer alimento para saber qué tienes en casa.</string>
     <string name="inventory_add_button">Añadir alimento</string>
     <string name="inventory_error_message">No se ha podido cargar el inventario.</string>
+    <string name="inventory_loading_description">Cargando inventario…</string>
     <string name="inventory_retry_button">Reintentar</string>
 
     <string name="add_exact_item_title">Añadir alimento</string>
@@ -16,6 +17,7 @@
     <string name="add_exact_item_quantity_label">Cantidad</string>
     <string name="add_exact_item_unit_label">Unidad</string>
     <string name="add_exact_item_save_button">Guardar</string>
+    <string name="add_exact_item_saving_label">Guardando…</string>
     <string name="add_exact_item_cancel_button">Cancelar</string>
 
     <string name="unit_units">Unidades</string>

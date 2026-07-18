@@ -265,6 +265,39 @@ class ArchitectureTest {
     }
 
     @Test
+    fun `design system should be independent`() {
+        noClasses().that().resideInAPackage("..core.designsystem..")
+            .should().dependOnClassesThat().resideInAPackage("..core.model..")
+            .orShould().dependOnClassesThat().resideInAPackage("..core.domain..")
+            .orShould().dependOnClassesThat().resideInAPackage("..core.data..")
+            .orShould().dependOnClassesThat().resideInAPackage("..core.database..")
+            .orShould().dependOnClassesThat().resideInAPackage("..feature..")
+            .orShould().dependOnClassesThat().resideInAPackage("..androidx.room..")
+            .orShould().dependOnClassesThat().resideInAPackage("..androidx.navigation..")
+            .orShould().dependOnClassesThat().haveSimpleNameEndingWith("ViewModel")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `design system production should not contain feature literals or test tags`() {
+        val root = File(rootPath)
+        val dsProd = File(root, "core/designsystem/src/main/kotlin/com/luisete/queda/core/designsystem")
+        assertTrue("Design system prod directory not found", dsProd.exists())
+
+        val forbiddenStrings = listOf("inventory_", "add_exact_item", "loadingTestTag", "supportingTextTestTag")
+
+        dsProd.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
+            val content = file.readText()
+            forbiddenStrings.forEach { forbidden ->
+                assertFalse(
+                    "File ${file.path} contains forbidden feature-specific or test-specific string: $forbidden",
+                    content.contains(forbidden),
+                )
+            }
+        }
+    }
+
+    @Test
     fun `inventory feature must not reference room entities or dao`() {
         noClasses().that().resideInAPackage("..feature.inventory..")
             .should().dependOnClassesThat().resideInAPackage("..core.database..")

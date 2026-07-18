@@ -10,6 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.luisete.queda"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
