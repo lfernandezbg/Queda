@@ -1,0 +1,30 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_save_button"
+- assertVisible: "Introduce un nombre."
+- assertVisible: "Introduce una cantidad."
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Test"
+- tapOn:
+    id: "add_exact_item_quantity_input"
+- inputText: "0"
+- tapOn:
+    id: "add_exact_item_save_button"
+- assertVisible: "La cantidad debe ser mayor que cero."
+- tapOn:
+    id: "add_exact_item_quantity_input"
+- inputText: ""
+- pressKey: Backspace
+- inputText: "1.2345"
+- tapOn:
+    id: "add_exact_item_save_button"
+- assertVisible: "Usa como máximo 3 decimales."
+- tapOn:
+    id: "add_exact_item_cancel_button"
+- assertVisible:
+    id: "inventory_empty_state"

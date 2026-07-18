@@ -1,0 +1,16 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Cancel Test"
+- tapOn:
+    id: "add_exact_item_cancel_button"
+- stopApp
+- launchApp
+- assertVisible:
+    id: "inventory_screen"
+- assertVisible:
+    id: "inventory_empty_state"

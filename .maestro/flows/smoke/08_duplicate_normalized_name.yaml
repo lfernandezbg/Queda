@@ -1,0 +1,28 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Arroz"
+- tapOn:
+    id: "add_exact_item_quantity_input"
+- inputText: "1"
+- tapOn:
+    id: "add_exact_item_save_button"
+- extendedWaitUntil:
+    visible:
+      id: "inventory_screen"
+    timeout: 10000
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "  ARROZ  "
+- tapOn:
+    id: "add_exact_item_quantity_input"
+- inputText: "2"
+- tapOn:
+    id: "add_exact_item_save_button"
+- assertVisible: "Ya existe un alimento con ese nombre."

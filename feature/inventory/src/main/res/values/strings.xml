@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="inventory_title">Inventario</string>
+    <plurals name="inventory_summary">
+        <item quantity="one">%1$d alimento</item>
+        <item quantity="other">%1$d alimentos</item>
+    </plurals>
+    <string name="inventory_empty_title">Tu inventario está vacío</string>
+    <string name="inventory_empty_body">Añade tu primer alimento para saber qué tienes en casa.</string>
+    <string name="inventory_add_button">Añadir alimento</string>
+    <string name="inventory_error_message">No se ha podido cargar el inventario.</string>
+    <string name="inventory_retry_button">Reintentar</string>
+
+    <string name="add_exact_item_title">Añadir alimento</string>
+    <string name="add_exact_item_name_label">Nombre</string>
+    <string name="add_exact_item_quantity_label">Cantidad</string>
+    <string name="add_exact_item_unit_label">Unidad</string>
+    <string name="add_exact_item_save_button">Guardar</string>
+    <string name="add_exact_item_cancel_button">Cancelar</string>
+
+    <string name="unit_units">Unidades</string>
+    <string name="unit_grams">Gramos</string>
+    <string name="unit_kilograms">Kilogramos</string>
+    <string name="unit_milliliters">Mililitros</string>
+    <string name="unit_liters">Litros</string>
+
+    <string name="unit_abbreviation_unit">ud</string>
+    <string name="unit_abbreviation_gram">g</string>
+    <string name="unit_abbreviation_kilogram">kg</string>
+    <string name="unit_abbreviation_milliliter">ml</string>
+    <string name="unit_abbreviation_liter">l</string>
+    <string name="inventory_quantity_format">%1$s %2$s</string>
+
+    <string name="back">Volver</string>
+
+    <string name="error_name_blank">Introduce un nombre.</string>
+    <string name="error_name_too_long">El nombre no puede superar 80 caracteres.</string>
+    <string name="error_name_forbidden">El nombre contiene caracteres no válidos.</string>
+    <string name="error_quantity_blank">Introduce una cantidad.</string>
+    <string name="error_quantity_format">Introduce un número válido.</string>
+    <string name="error_quantity_not_positive">La cantidad debe ser mayor que cero.</string>
+    <string name="error_quantity_too_many_decimals">Usa como máximo 3 decimales.</string>
+    <string name="error_duplicate_name">Ya existe un alimento con ese nombre.</string>
+    <string name="error_storage_failure">No se ha podido guardar. Inténtalo de nuevo.</string>
+</resources>
