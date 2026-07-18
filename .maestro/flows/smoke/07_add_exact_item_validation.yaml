@@ -5,6 +5,7 @@ appId: com.luisete.queda.e2e
     id: "inventory_add_button"
 - tapOn:
     id: "add_exact_item_save_button"
+- hideKeyboard
 - assertVisible: "Introduce un nombre."
 - assertVisible: "Introduce una cantidad."
 - tapOn:
