@@ -23,6 +23,7 @@ appId: com.luisete.queda.e2e
 - tapOn:
     id: "add_exact_item_quantity_input"
 - inputText: "2"
+- hideKeyboard
 - tapOn:
     id: "add_exact_item_save_button"
 - assertVisible: "Ya existe un alimento con ese nombre."
