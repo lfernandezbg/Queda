@@ -32,6 +32,7 @@ jobs:
           api-level: 28
           target: google_apis
           arch: x86_64
+          profile: pixel_7_pro
           script: ./gradlew :app:connectedDebugAndroidTest
 
       - name: Upload Test Reports
