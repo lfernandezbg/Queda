@@ -10,4 +10,8 @@ android {
 dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.reflect)
+
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

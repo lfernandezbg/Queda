@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 
 . "$PSScriptRoot\Invoke-CheckedCommand.ps1"
 
-Write-Host "--- Phase 0: Maestro Smoke ---"
+Write-Host "--- Iteration 1: Maestro Smoke ---"
 
 if (Test-Path ".maestro/results") {
     Remove-Item -Path ".maestro/results" -Recurse -Force
@@ -65,7 +65,16 @@ Invoke-CheckedCommand -Executable "adb" -Arguments "-s", $serial, "install", "-r
 $flows = @(
     ".maestro/flows/smoke/00_launch_app.yaml",
     ".maestro/flows/smoke/01_reset_and_launch.yaml",
-    ".maestro/flows/smoke/02_seed_empty_and_launch.yaml"
+    ".maestro/flows/smoke/02_seed_empty_and_launch.yaml",
+    ".maestro/flows/smoke/03_inventory_empty_state.yaml",
+    ".maestro/flows/smoke/04_add_exact_unit_item.yaml",
+    ".maestro/flows/smoke/05_add_exact_mass_item.yaml",
+    ".maestro/flows/smoke/06_add_exact_volume_comma_item.yaml",
+    ".maestro/flows/smoke/07_add_exact_item_validation.yaml",
+    ".maestro/flows/smoke/08_duplicate_normalized_name.yaml",
+    ".maestro/flows/smoke/09_cancel_add_item.yaml",
+    ".maestro/flows/smoke/10_multiple_items_visible.yaml",
+    ".maestro/flows/smoke/11_item_persists_after_relaunch.yaml"
 )
 
 foreach ($flow in $flows) {

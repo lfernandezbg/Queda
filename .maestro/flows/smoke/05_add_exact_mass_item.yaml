@@ -1,0 +1,23 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Arroz"
+- tapOn:
+    id: "add_exact_item_quantity_input"
+- inputText: "1.5"
+- hideKeyboard
+- tapOn:
+    id: "add_exact_item_unit_selector"
+- tapOn: "Kilogramos"
+- tapOn:
+    id: "add_exact_item_save_button"
+- extendedWaitUntil:
+    visible:
+      id: "inventory_screen"
+    timeout: 10000
+- assertVisible: "Arroz"
+- assertVisible: "1,5 kg"

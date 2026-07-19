@@ -26,6 +26,11 @@ class ArchitectureTest {
                 "com.luisete.queda.core.testing.E2ECommandParser",
                 "com.luisete.queda.core.model.quantity.ExactQuantity",
                 "com.luisete.queda.core.domain.quantity.QuantityOperations",
+                "com.luisete.queda.core.model.product.ProductName",
+                "com.luisete.queda.core.domain.inventory.AddExactInventoryItemUseCase",
+                "com.luisete.queda.core.database.QuedaDatabase",
+                "com.luisete.queda.core.data.inventory.OfflineInventoryRepository",
+                "com.luisete.queda.feature.inventory.InventoryViewModel",
             )
         requiredClasses.forEach { fqName ->
             assertTrue(
@@ -63,7 +68,6 @@ class ArchitectureTest {
     fun `feature modules should not depend on core database`() {
         noClasses().that().resideInAPackage("..feature..")
             .should().dependOnClassesThat().resideInAPackage("..core.database..")
-            .allowEmptyShould(true)
             .check(allProjectClasses)
     }
 
@@ -258,6 +262,131 @@ class ArchitectureTest {
             assertFalse("File ${file.path} contains GenericId", content.contains("GenericId"))
             assertFalse("File ${file.path} contains GenericError", content.contains("GenericError"))
         }
+    }
+
+    @Test
+    fun `design system should be independent`() {
+        noClasses().that().resideInAPackage("..core.designsystem..")
+            .should().dependOnClassesThat().resideInAPackage("..core.model..")
+            .orShould().dependOnClassesThat().resideInAPackage("..core.domain..")
+            .orShould().dependOnClassesThat().resideInAPackage("..core.data..")
+            .orShould().dependOnClassesThat().resideInAPackage("..core.database..")
+            .orShould().dependOnClassesThat().resideInAPackage("..feature..")
+            .orShould().dependOnClassesThat().resideInAPackage("..androidx.room..")
+            .orShould().dependOnClassesThat().resideInAPackage("..androidx.navigation..")
+            .orShould().dependOnClassesThat().haveSimpleNameEndingWith("ViewModel")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `design system production should not contain feature literals or test tags`() {
+        val root = File(rootPath)
+        val dsProd = File(root, "core/designsystem/src/main/kotlin/com/luisete/queda/core/designsystem")
+        assertTrue("Design system prod directory not found", dsProd.exists())
+
+        val forbiddenStrings = listOf("inventory_", "add_exact_item", "loadingTestTag", "supportingTextTestTag")
+
+        dsProd.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
+            val content = file.readText()
+            forbiddenStrings.forEach { forbidden ->
+                assertFalse(
+                    "File ${file.path} contains forbidden feature-specific or test-specific string: $forbidden",
+                    content.contains(forbidden),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `inventory feature must not reference room entities or dao`() {
+        noClasses().that().resideInAPackage("..feature.inventory..")
+            .should().dependOnClassesThat().resideInAPackage("..core.database..")
+            .orShould().dependOnClassesThat().haveSimpleNameEndingWith("Entity")
+            .orShould().dependOnClassesThat().haveSimpleNameEndingWith("Dao")
+            .orShould().dependOnClassesThat().haveSimpleName("QuedaDatabase")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.room..")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.sqlite..")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `inventory viewmodels must not reference android context nav controller or room`() {
+        noClasses().that().resideInAPackage("..feature.inventory..")
+            .and().haveSimpleNameEndingWith("ViewModel")
+            .should().dependOnClassesThat().resideInAPackage("android.content..")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.navigation..")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.room..")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `room annotations must remain inside core database`() {
+        noClasses().that().resideOutsideOfPackage("..core.database..")
+            .should().dependOnClassesThat().resideInAPackage("androidx.room..")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `inventory repository implementation must remain inside core data`() {
+        noClasses().that().haveSimpleName("OfflineInventoryRepository")
+            .should().resideOutsideOfPackage("..core.data.inventory..")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `inventory domain contracts must not import android room compose hilt or sqlite`() {
+        noClasses().that().resideInAPackage("..core.domain.inventory..")
+            .should().dependOnClassesThat().resideInAPackage("android..")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.room..")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.compose..")
+            .orShould().dependOnClassesThat().resideInAPackage("dagger.hilt..")
+            .orShould().dependOnClassesThat().resideInAPackage("androidx.sqlite..")
+            .check(allProjectClasses)
+    }
+
+    @Test
+    fun `app must not reference inventory dao product entity or stock item entity`() {
+        val files =
+            requiredKotlinFiles(
+                listOf(
+                    "app/src/main/java/com/luisete/queda/",
+                ),
+            )
+        files.forEach { file ->
+            val content = file.readText()
+            assertFalse("File ${file.path} references InventoryDao", content.contains("InventoryDao"))
+            assertFalse("File ${file.path} references ProductEntity", content.contains("ProductEntity"))
+            assertFalse("File ${file.path} references StockItemEntity", content.contains("StockItemEntity"))
+        }
+    }
+
+    @Test
+    fun `production source must not contain fake inventory repository or e2e test control`() {
+        val files =
+            requiredKotlinFiles(
+                listOf(
+                    "core/model/src/main/kotlin/",
+                    "core/domain/src/main/kotlin/",
+                    "core/data/src/main/kotlin/",
+                    "feature/inventory/src/main/kotlin/",
+                    "core/database/src/main/kotlin/",
+                    "app/src/main/java/",
+                ),
+            )
+
+        files.forEach { file ->
+            val content = file.readText()
+            assertFalse("Production file ${file.path} contains Fake", file.name.contains("Fake"))
+            assertFalse("Production file ${file.path} contains E2ETestControl", content.contains("E2ETestControl"))
+        }
+    }
+
+    @Test
+    fun `inventory feature must not depend on core database via build gradle`() {
+        val buildFile = File(rootPath, "feature/inventory/build.gradle.kts")
+        assertTrue(buildFile.exists())
+        val content = buildFile.readText()
+        assertFalse("feature:inventory depends on core:database", content.contains("project(\":core:database\")"))
     }
 
     private fun requiredKotlinFiles(relativePaths: List<String>): List<File> {

@@ -3,6 +3,4 @@ appId: com.luisete.queda.e2e
 - clearState
 - launchApp
 - assertVisible:
-    id: "app_root"
-- assertVisible:
-    id: "screen_foundation"
+    id: "inventory_screen"

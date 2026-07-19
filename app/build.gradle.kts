@@ -10,6 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.luisete.queda"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -33,7 +34,10 @@ dependencies {
     implementation(project(":feature:settings"))
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     "e2eImplementation"(project(":core:testing"))
+    "e2eImplementation"(project(":core:database"))
+    "e2eImplementation"(libs.androidx.room.runtime)
     baselineProfile(project(":baselineprofile"))
 }

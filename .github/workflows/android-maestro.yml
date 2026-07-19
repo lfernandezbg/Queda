@@ -35,6 +35,7 @@ jobs:
           api-level: 28
           target: google_apis
           arch: x86_64
+          profile: pixel_7_pro
           emulator-boot-timeout: 600
           script: bash ./scripts/run-maestro-ci.sh
 
