@@ -39,6 +39,21 @@ class FakeInventoryDao : InventoryDao {
         stocks.add(stockItem)
     }
 
+    override suspend fun getStockItemById(id: String): StockItemEntity? {
+        return stocks.find { it.id == id }
+    }
+
+    override suspend fun updateStockItemQuantity(
+        id: String,
+        amount: String,
+        unit: String,
+    ) {
+        val index = stocks.indexOfFirst { it.id == id }
+        if (index != -1) {
+            stocks[index] = stocks[index].copy(quantityAmount = amount, quantityUnit = unit)
+        }
+    }
+
     override suspend fun addExactInventoryItem(
         product: ProductEntity,
         stockItem: StockItemEntity,

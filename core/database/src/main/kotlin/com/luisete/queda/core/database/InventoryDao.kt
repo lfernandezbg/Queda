@@ -48,6 +48,16 @@ interface InventoryDao {
     @Insert
     suspend fun insertStockItem(stockItem: StockItemEntity)
 
+    @Query("SELECT * FROM stock_items WHERE id = :id")
+    suspend fun getStockItemById(id: String): StockItemEntity?
+
+    @Query("UPDATE stock_items SET quantityAmount = :amount, quantityUnit = :unit WHERE id = :id")
+    suspend fun updateStockItemQuantity(
+        id: String,
+        amount: String,
+        unit: String,
+    )
+
     @Suppress("ReturnCount")
     @Transaction
     suspend fun addExactInventoryItem(

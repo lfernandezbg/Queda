@@ -15,6 +15,34 @@ import java.math.BigDecimal
 object InventoryTestData {
     val householdId = HouseholdId.from("test-household")
 
+    fun createProduct(
+        id: String = "p1",
+        name: String = "Test Product",
+    ): Product {
+        val productName =
+            when (val res = ProductName.create(name)) {
+                is ProductNameCreationResult.Success -> res.productName
+                else -> throw IllegalArgumentException("Invalid name for test data: $name")
+            }
+        return Product(
+            id = ProductId.from(id),
+            householdId = householdId,
+            name = productName,
+        )
+    }
+
+    fun createStockItem(
+        id: String = "s1",
+        productId: String = "p1",
+        quantity: ExactQuantity = ExactQuantity.of("1", MeasurementUnit.UNIT),
+    ): StockItem =
+        StockItem(
+            id = StockItemId.from(id),
+            householdId = householdId,
+            productId = ProductId.from(productId),
+            quantity = quantity,
+        )
+
     fun createInventoryItem(
         name: String = "Test Product",
         amount: String = "1",

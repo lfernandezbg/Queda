@@ -1,0 +1,133 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+
+- extendedWaitUntil:
+      visible:
+          id: "inventory_add_button"
+      timeout: 10000
+
+- tapOn:
+      id: "inventory_add_button"
+
+- tapOn:
+      id: "add_exact_item_name_input"
+- inputText: "Arroz"
+
+- tapOn:
+      id: "add_exact_item_quantity_input"
+- inputText: "1"
+- hideKeyboard
+
+- tapOn:
+      id: "add_exact_item_unit_selector"
+- tapOn: "Kilogramos"
+
+- tapOn:
+      id: "add_exact_item_save_button"
+
+- extendedWaitUntil:
+      visible:
+          id: "inventory_item_row_.*"
+      timeout: 10000
+
+# Zero
+- tapOn:
+      id: "inventory_item_row_.*"
+
+- extendedWaitUntil:
+      visible: "Consumir"
+      timeout: 10000
+
+- tapOn: "Consumir"
+
+- extendedWaitUntil:
+      visible: "Consumir alimento"
+      timeout: 10000
+
+- tapOn: "Cantidad"
+- inputText: "0"
+- hideKeyboard
+
+- tapOn: "Consumir"
+
+- extendedWaitUntil:
+      visible: "La cantidad debe ser mayor que cero."
+      timeout: 10000
+
+- assertVisible: "La cantidad debe ser mayor que cero."
+
+- tapOn: "Cancelar"
+
+- extendedWaitUntil:
+      visible: "1 kg"
+      timeout: 10000
+
+- assertVisible: "1 kg"
+
+# Equal
+- tapOn:
+      id: "inventory_item_row_.*"
+
+- extendedWaitUntil:
+      visible: "Consumir"
+      timeout: 10000
+
+- tapOn: "Consumir"
+
+- extendedWaitUntil:
+      visible: "Consumir alimento"
+      timeout: 10000
+
+- tapOn: "Cantidad"
+- inputText: "1"
+- hideKeyboard
+
+- tapOn: "Consumir"
+- extendedWaitUntil:
+      visible: "La cantidad a consumir debe ser menor que la actual."
+      timeout: 10000
+
+- assertVisible: "La cantidad a consumir debe ser menor que la actual."
+
+- tapOn: "Cancelar"
+
+- extendedWaitUntil:
+      visible: "1 kg"
+      timeout: 10000
+
+- assertVisible: "1 kg"
+
+# Greater
+- tapOn:
+      id: "inventory_item_row_.*"
+
+- extendedWaitUntil:
+      visible: "Consumir"
+      timeout: 10000
+
+- tapOn: "Consumir"
+
+- extendedWaitUntil:
+      visible: "Consumir alimento"
+      timeout: 10000
+
+- tapOn: "Cantidad"
+- inputText: "2"
+- hideKeyboard
+
+- tapOn: "Consumir"
+
+- extendedWaitUntil:
+      visible: "La cantidad a consumir debe ser menor que la actual."
+      timeout: 10000
+
+- assertVisible: "La cantidad a consumir debe ser menor que la actual."
+
+- tapOn: "Cancelar"
+
+- extendedWaitUntil:
+      visible: "1 kg"
+      timeout: 10000
+
+- assertVisible: "1 kg"

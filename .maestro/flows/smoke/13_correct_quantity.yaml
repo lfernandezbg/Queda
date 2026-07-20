@@ -1,0 +1,79 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+
+- extendedWaitUntil:
+        visible:
+              id: "inventory_add_button"
+        timeout: 10000
+
+- tapOn:
+        id: "inventory_add_button"
+
+- tapOn:
+        id: "add_exact_item_name_input"
+- inputText: "Huevos"
+
+- tapOn:
+        id: "add_exact_item_quantity_input"
+- inputText: "6"
+- hideKeyboard
+
+- tapOn:
+        id: "add_exact_item_unit_selector"
+- tapOn: "Unidades"
+
+- tapOn:
+        id: "add_exact_item_save_button"
+
+- extendedWaitUntil:
+        visible:
+              id: "inventory_item_row_.*"
+        timeout: 10000
+
+- tapOn:
+        id: "inventory_item_row_.*"
+
+- extendedWaitUntil:
+        visible: "Corregir cantidad"
+        timeout: 10000
+
+- tapOn: "Corregir cantidad"
+
+- extendedWaitUntil:
+        visible: "Cantidad"
+        timeout: 10000
+
+- tapOn: "Cantidad"
+- inputText: "12"
+- hideKeyboard
+
+- extendedWaitUntil:
+        visible: "Nueva cantidad: 12 ud"
+        timeout: 10000
+
+- assertVisible: "Nueva cantidad: 12 ud"
+
+- tapOn: "Confirmar"
+
+- extendedWaitUntil:
+        visible: "12 ud"
+        timeout: 10000
+
+- assertVisible: "Huevos"
+- assertVisible: "12 ud"
+
+- stopApp
+- launchApp
+
+- extendedWaitUntil:
+        visible:
+              id: "inventory_screen"
+        timeout: 10000
+
+- extendedWaitUntil:
+        visible: "12 ud"
+        timeout: 10000
+
+- assertVisible: "Huevos"
+- assertVisible: "12 ud"

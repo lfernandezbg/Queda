@@ -44,4 +44,23 @@
     <string name="error_quantity_too_many_decimals">Usa como máximo 3 decimales.</string>
     <string name="error_duplicate_name">Ya existe un alimento con ese nombre.</string>
     <string name="error_storage_failure">No se ha podido guardar. Inténtalo de nuevo.</string>
+
+    <!-- Quantity Action Sheet -->
+    <string name="inventory_row_click_label">Gestionar cantidad</string>
+    <string name="inventory_quantity_label">Cantidad actual: %1$s %2$s</string>
+    <string name="quantity_action_consume">Consumir</string>
+    <string name="quantity_action_correct">Corregir cantidad</string>
+    <string name="quantity_action_consume_title">Consumir alimento</string>
+    <string name="quantity_action_correct_title">Corregir cantidad</string>
+    <string name="quantity_action_consume_confirm">Consumir</string>
+    <string name="quantity_action_correct_confirm">Confirmar</string>
+    <string name="quantity_action_cancel">Cancelar</string>
+    <string name="quantity_action_submitting">Guardando…</string>
+    <string name="quantity_amount_label">Cantidad</string>
+    <string name="quantity_consume_preview">Quedarán %1$s</string>
+    <string name="quantity_correct_preview">Nueva cantidad: %1$s</string>
+    <string name="error_quantity_must_be_lower">La cantidad a consumir debe ser menor que la actual.</string>
+    <string name="error_incompatible_unit">La unidad no es compatible con el alimento.</string>
+    <string name="error_quantity_unchanged">La nueva cantidad es igual a la actual.</string>
+    <string name="error_product_not_found">El alimento ya no existe.</string>
 </resources>

@@ -103,7 +103,7 @@ class QuantityDomainIntegrationTests {
         val q1 = ExactQuantity.of("100", MeasurementUnit.GRAM)
         val q2 = ExactQuantity.of("200", MeasurementUnit.GRAM)
         assertEquals(
-            DomainError.InsufficientQuantity,
+            DomainError.AmountMustBeLowerThanCurrent,
             QuantityOperations.consume(q1, q2).failureError(),
         )
         assertAmount("100", q1.amount)
@@ -154,16 +154,16 @@ class QuantityDomainIntegrationTests {
     }
 
     @Test
-    fun correctionFromGramToCompatibleKilogramPreservesValue() {
+    fun correctionFromGramToCompatibleKilogramWithDifferentValuePreservesValue() {
         val start = ExactQuantity.of("1000", MeasurementUnit.GRAM)
         val corrected =
             QuantityOperations.correct(
                 start,
-                BigDecimal.ONE,
+                BigDecimal.valueOf(2),
                 MeasurementUnit.KILOGRAM,
             ).successValue()
         assertEquals(
-            ExactQuantity.of("1", MeasurementUnit.KILOGRAM),
+            ExactQuantity.of("2", MeasurementUnit.KILOGRAM),
             corrected,
         )
     }
@@ -187,11 +187,13 @@ class QuantityDomainIntegrationTests {
     }
 
     @Test
-    fun zeroConsumptionIsIdempotentAcrossAllUnits() {
+    fun zeroConsumptionFails() {
         val q = ExactQuantity.of("1", MeasurementUnit.KILOGRAM)
         val zero = ExactQuantity.of(BigDecimal.ZERO, MeasurementUnit.GRAM)
-        val res = QuantityOperations.consume(q, zero).successValue()
-        assertEquals(q, res)
+        assertEquals(
+            DomainError.AmountMustBePositive,
+            QuantityOperations.consume(q, zero).failureError(),
+        )
     }
 
     @Test

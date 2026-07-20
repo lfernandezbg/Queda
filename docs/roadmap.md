@@ -4,7 +4,7 @@
 
 1. [DONE] Alta y listado exacto.
 2. Editar y eliminar.
-3. Consumir y corregir cantidad exacta.
+3. [DONE] Consumir y corregir cantidad exacta.
 4. Escaneo local de código de barras.
 5. Cantidad aproximada.
 6. Ubicaciones.

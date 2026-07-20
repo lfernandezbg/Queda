@@ -33,4 +33,15 @@ object InventoryTestTags {
     const val ADD_EXACT_ITEM_SAVE_BUTTON = "add_exact_item_save_button"
     const val ADD_EXACT_ITEM_CANCEL_BUTTON = "add_exact_item_cancel_button"
     const val ADD_EXACT_ITEM_SAVING = "add_exact_item_saving"
+
+    // Quantity Action Sheet
+    const val QUANTITY_ACTION_SHEET = "quantity_action_sheet"
+    const val QUANTITY_ACTION_CONSUME = "quantity_action_consume"
+    const val QUANTITY_ACTION_CORRECT = "quantity_action_correct"
+    const val QUANTITY_ACTION_INPUT = "quantity_action_input"
+    const val QUANTITY_ACTION_UNIT_SELECTOR = "quantity_action_unit_selector"
+    const val QUANTITY_ACTION_PREVIEW = "quantity_action_preview"
+    const val QUANTITY_ACTION_CONFIRM = "quantity_action_confirm"
+    const val QUANTITY_ACTION_CANCEL = "quantity_action_cancel"
+    const val QUANTITY_ACTION_ERROR = "quantity_action_error"
 }

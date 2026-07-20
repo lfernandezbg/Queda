@@ -25,4 +25,22 @@ sealed interface DomainError {
 
     data object ApproximateLevelDidNotDecrease :
         DomainError
+
+    data object ResultingQuantityMustBePositive :
+        DomainError
+
+    data object UnchangedQuantity :
+        DomainError
+
+    data object ProductNotFound :
+        DomainError
+
+    data object StorageFailure :
+        DomainError
+
+    data object AmountMustBePositive :
+        DomainError
+
+    data object AmountMustBeLowerThanCurrent :
+        DomainError
 }
