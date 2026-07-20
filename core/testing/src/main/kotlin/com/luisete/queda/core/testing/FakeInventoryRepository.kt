@@ -55,7 +55,6 @@ class FakeInventoryRepository : InventoryRepository {
         flowError = error
     }
 
-
     override fun observeExactInventoryItems(householdId: HouseholdId): Flow<List<InventoryItem>> {
         return (
             if (flowError != null) {

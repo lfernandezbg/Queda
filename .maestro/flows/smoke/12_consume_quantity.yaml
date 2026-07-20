@@ -67,11 +67,6 @@ appId: com.luisete.queda.e2e
 - launchApp
 
 - extendedWaitUntil:
-      visible:
-          id: "inventory_screen"
-      timeout: 10000
-
-- extendedWaitUntil:
       visible: "7 l"
       timeout: 10000
 
