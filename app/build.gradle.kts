@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.luisete.queda"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.luisete.queda.QuedaTestRunner"
     }
 
     buildTypes {
@@ -40,4 +40,12 @@ dependencies {
     "e2eImplementation"(project(":core:database"))
     "e2eImplementation"(libs.androidx.room.runtime)
     baselineProfile(project(":baselineprofile"))
+
+    androidTestImplementation(project(":core:database"))
+    androidTestImplementation(libs.androidx.room.runtime)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.hilt.testing)
+    kspAndroidTest(libs.hilt.compiler)
 }

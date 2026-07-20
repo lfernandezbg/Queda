@@ -1,5 +1,6 @@
 package com.luisete.queda.core.domain.quantity
 
+import com.luisete.queda.core.domain.result.Success
 import com.luisete.queda.core.model.quantity.ApproximateLevel
 import com.luisete.queda.core.model.quantity.ApproximateQuantity
 import com.luisete.queda.core.model.quantity.ExactQuantity
@@ -77,8 +78,21 @@ class QuantityOperationsPropertyTests {
     @Test
     fun validConsumptionNeverProducesNegativeValue() =
         runTest {
-            checkAll(config, exactQuantityArb) { q ->
-                QuantityOperations.consume(q, q).successValue().amount.signum() shouldBe 0
+            val nonZeroQuantityArb =
+                exactQuantityArb.map {
+                    if (it.amount.signum() == 0) ExactQuantity.of(BigDecimal.ONE, it.unit) else it
+                }
+            checkAll(config, nonZeroQuantityArb) { q ->
+                val half =
+                    q.amount.divide(
+                        BigDecimal.valueOf(2),
+                        ExactQuantity.MAX_DECIMAL_PLACES,
+                        java.math.RoundingMode.DOWN,
+                    )
+                if (half.signum() > 0) {
+                    val toConsume = ExactQuantity.of(half, q.unit)
+                    QuantityOperations.consume(q, toConsume).successValue().amount.signum() shouldBe 1
+                }
             }
         }
 
@@ -89,17 +103,35 @@ class QuantityOperationsPropertyTests {
                 arbitrary {
                     val q1 = exactQuantityArb.bind()
                     val q1Base = toBase(q1.amount, q1.unit)
-                    val unscaled = Arb.int(0, 1_000_000_000).bind().toLong()
+                    if (q1Base.signum() <= 0) {
+                        return@arbitrary (q1 to ExactQuantity.of(BigDecimal.ONE, q1.unit))
+                    }
+                    val unscaled = Arb.int(1, 1_000_000_000).bind().toLong()
                     val scale = Arb.int(0, 3).bind()
-                    val q2AmountInBase = BigDecimal.valueOf(unscaled, scale).min(q1Base)
-                    val q2 = ExactQuantity.of(q2AmountInBase, baseUnitFor(q1.unit.dimension))
+                    val q2AmountInBase =
+                        BigDecimal.valueOf(
+                            unscaled,
+                            scale,
+                        ).min(q1Base.divide(BigDecimal.valueOf(2), 3, java.math.RoundingMode.DOWN))
+                    val q2 =
+                        if (q2AmountInBase.signum() <= 0) {
+                            ExactQuantity.of(
+                                BigDecimal.ONE,
+                                baseUnitFor(q1.unit.dimension),
+                            )
+                        } else {
+                            ExactQuantity.of(q2AmountInBase, baseUnitFor(q1.unit.dimension))
+                        }
                     q1 to q2
                 }
             checkAll(config, pairArb) { (q1, q2) ->
-                val result = QuantityOperations.consume(q1, q2).successValue()
-                val resBase = toBase(result.amount, result.unit)
                 val q1Base = toBase(q1.amount, q1.unit)
-                resBase shouldBeLessOrEqualTo q1Base
+                val q2Base = toBase(q2.amount, q2.unit)
+                if (q1.amount.signum() > 0 && q2.amount.signum() > 0 && q2Base < q1Base) {
+                    val result = QuantityOperations.consume(q1, q2).successValue()
+                    val resBase = toBase(result.amount, result.unit)
+                    resBase shouldBeLessOrEqualTo q1Base
+                }
             }
         }
 
@@ -247,7 +279,10 @@ class QuantityOperationsPropertyTests {
     @Test
     fun baseUnitFallbackNeverLosesPrecision() =
         runTest {
-            val fractionalAmountArb = arbitrary { BigDecimal.valueOf(Arb.int(1, 999).bind().toLong(), 3) }
+            val fractionalAmountArb =
+                arbitrary {
+                    BigDecimal.valueOf(Arb.int(1, 999).bind().toLong(), 3)
+                }
             val fallbackCaseArb: Arb<Triple<ExactQuantity, ExactQuantity, MeasurementUnit>> =
                 arbitrary {
                     val frac = fractionalAmountArb.bind()
@@ -281,34 +316,78 @@ class QuantityOperationsPropertyTests {
                         0 -> QuantityOperations.convert(quantity, quantity.unit)
                         1 -> QuantityOperations.add(quantity, zero)
                         2 -> QuantityOperations.subtract(quantity, zero)
-                        3 -> QuantityOperations.consume(quantity, zero)
-                        else -> QuantityOperations.correct(quantity, quantity.amount, quantity.unit)
+                        3 -> {
+                            val availableInBase = toBase(quantity.amount, quantity.unit)
+                            if (availableInBase.signum() > 0) {
+                                val half =
+                                    availableInBase.divide(
+                                        BigDecimal.valueOf(2),
+                                        3,
+                                        java.math.RoundingMode.DOWN,
+                                    )
+                                if (half.signum() > 0) {
+                                    QuantityOperations.consume(
+                                        quantity,
+                                        ExactQuantity.of(half, baseUnitFor(quantity.unit.dimension)),
+                                    )
+                                } else {
+                                    Success(quantity)
+                                }
+                            } else {
+                                Success(quantity)
+                            }
+                        }
+
+                        else -> {
+                            if (quantity.amount.signum() <= 0) {
+                                QuantityOperations.correct(quantity, BigDecimal.ONE, quantity.unit)
+                            } else {
+                                val differentAmount = quantity.amount.add(BigDecimal.ONE)
+                                QuantityOperations.correct(quantity, differentAmount, quantity.unit)
+                            }
+                        }
                     }.successValue()
                 result.amount.scale() shouldBeLessOrEqualTo ExactQuantity.MAX_DECIMAL_PLACES
             }
         }
 
     @Test
-    fun noSuccessfulExactOperationReturnsNegativeAmount() =
+    fun subtractionResultIsNeverNegative() =
         runTest {
-            val validPairArb =
+            val pairArb =
                 arbitrary {
-                    val available = exactQuantityArb.bind()
-                    val availableInBase = toBase(available.amount, available.unit)
-                    val candidate = amountArb.bind().min(availableInBase)
-                    val operand = ExactQuantity.of(candidate, baseUnitFor(available.unit.dimension))
-                    available to operand
+                    val q1 = exactQuantityArb.bind()
+                    val q1Base = toBase(q1.amount, q1.unit)
+                    val unscaled = Arb.int(0, 1_000_000_000).bind().toLong()
+                    val scale = Arb.int(0, 3).bind()
+                    val q2AmountInBase = BigDecimal.valueOf(unscaled, scale).min(q1Base)
+                    val q2 = ExactQuantity.of(q2AmountInBase, baseUnitFor(q1.unit.dimension))
+                    q1 to q2
                 }
-            val operationArb = Arb.int(0, 1)
-            checkAll(config, validPairArb, operationArb) { pair: Pair<ExactQuantity, ExactQuantity>, operation: Int ->
-                val (available, operand) = pair
-                val result =
-                    if (operation == 0) {
-                        QuantityOperations.subtract(available, operand)
-                    } else {
-                        QuantityOperations.consume(available, operand)
-                    }.successValue()
+            checkAll(config, pairArb) { (q1, q2) ->
+                val result = QuantityOperations.subtract(q1, q2).successValue()
                 result.amount.signum() shouldBeGreaterOrEqualTo 0
+            }
+        }
+
+    @Test
+    fun consumptionResultIsAlwaysPositive() =
+        runTest {
+            val pairArb =
+                arbitrary {
+                    val q1 = exactQuantityArb.bind()
+                    val q1Base = toBase(q1.amount, q1.unit)
+                    if (q1Base.signum() <= 0) return@arbitrary null
+                    val half = q1Base.divide(BigDecimal.valueOf(2), 3, java.math.RoundingMode.DOWN)
+                    if (half.signum() <= 0) return@arbitrary null
+                    val toConsume = ExactQuantity.of(half, baseUnitFor(q1.unit.dimension))
+                    q1 to toConsume
+                }
+            checkAll(config, pairArb) { pair ->
+                if (pair != null) {
+                    val (q1, q2) = pair
+                    QuantityOperations.consume(q1, q2).successValue().amount.signum() shouldBe 1
+                }
             }
         }
 

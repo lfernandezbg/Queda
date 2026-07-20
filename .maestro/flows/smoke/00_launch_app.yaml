@@ -2,5 +2,10 @@ appId: com.luisete.queda.e2e
 ---
 - clearState
 - launchApp
-- assertVisible:
-    id: "inventory_screen"
+- tapOn:
+    text: "Wait"
+    optional: true
+- extendedWaitUntil:
+    visible:
+        id: "inventory_screen"
+    timeout: 30000

@@ -97,6 +97,9 @@ FLOWS=(
     ".maestro/flows/smoke/09_cancel_add_item.yaml"
     ".maestro/flows/smoke/10_multiple_items_visible.yaml"
     ".maestro/flows/smoke/11_item_persists_after_relaunch.yaml"
+    ".maestro/flows/smoke/12_consume_quantity.yaml"
+    ".maestro/flows/smoke/13_correct_quantity.yaml"
+    ".maestro/flows/smoke/14_reject_invalid_mutation.yaml"
 )
 
 for flow in "${FLOWS[@]}"; do

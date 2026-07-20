@@ -228,4 +228,31 @@ class InventoryDaoTest {
                 // Expected
             }
         }
+
+    @Test
+    fun getStockItemByIdReturnsCorrectEntity() =
+        runTest {
+            val product = ProductEntity("p1", "h1", "Milk", "milk")
+            val stock = StockItemEntity("s1", "h1", "p1", "1", "LITER")
+            dao.insertProduct(product)
+            dao.insertStockItem(stock)
+
+            val result = dao.getStockItemById("s1")
+            assertEquals(stock, result)
+        }
+
+    @Test
+    fun updateStockItemQuantityChangesPersistedValue() =
+        runTest {
+            val product = ProductEntity("p1", "h1", "Milk", "milk")
+            val stock = StockItemEntity("s1", "h1", "p1", "1", "LITER")
+            dao.insertProduct(product)
+            dao.insertStockItem(stock)
+
+            dao.updateStockItemQuantity("s1", "2.5", "GRAM")
+
+            val result = dao.getStockItemById("s1")
+            assertEquals("2.5", result?.quantityAmount)
+            assertEquals("GRAM", result?.quantityUnit)
+        }
 }

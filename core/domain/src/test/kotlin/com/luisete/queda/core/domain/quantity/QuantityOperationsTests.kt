@@ -342,22 +342,22 @@ class QuantityOperationsTests {
     }
 
     @Test fun consumeTotalSameUnit() {
-        assertAmount(
-            "0",
+        assertEquals(
+            DomainError.AmountMustBeLowerThanCurrent,
             QuantityOperations.consume(
                 ExactQuantity.of("10", MeasurementUnit.UNIT),
                 ExactQuantity.of("10", MeasurementUnit.UNIT),
-            ).successValue().amount,
+            ).failureError(),
         )
     }
 
     @Test fun consumeZero() {
         assertEquals(
-            oneUnit,
+            DomainError.AmountMustBePositive,
             QuantityOperations.consume(
                 oneUnit,
                 ExactQuantity.of("0", MeasurementUnit.UNIT),
-            ).successValue(),
+            ).failureError(),
         )
     }
 
@@ -391,9 +391,9 @@ class QuantityOperationsTests {
         )
     }
 
-    @Test fun consumeMoreThanAvailableReturnsInsufficientQuantity() {
+    @Test fun consumeMoreThanAvailableReturnsAmountMustBeLowerThanCurrent() {
         assertEquals(
-            DomainError.InsufficientQuantity,
+            DomainError.AmountMustBeLowerThanCurrent,
             QuantityOperations.consume(
                 ExactQuantity.of("100", MeasurementUnit.GRAM),
                 ExactQuantity.of("200", MeasurementUnit.GRAM),
@@ -415,14 +415,14 @@ class QuantityOperationsTests {
     }
 
     // CORRECT (45-52)
-    @Test fun correctToZero() {
-        assertAmount(
-            "0",
+    @Test fun correctToZeroFails() {
+        assertEquals(
+            DomainError.AmountMustBePositive,
             QuantityOperations.correct(
                 oneUnit,
                 BigDecimal.ZERO,
                 MeasurementUnit.UNIT,
-            ).successValue().amount,
+            ).failureError(),
         )
     }
 
@@ -439,29 +439,29 @@ class QuantityOperationsTests {
 
     @Test fun correctToLowerValue() {
         assertAmount(
-            "1",
+            "0.5",
             QuantityOperations.correct(
                 oneUnit,
-                BigDecimal.ONE,
+                BigDecimal("0.5"),
                 MeasurementUnit.UNIT,
             ).successValue().amount,
         )
     }
 
-    @Test fun correctToEquivalentCompatibleUnit() {
+    @Test fun correctToEquivalentCompatibleUnitReturnsUnchanged() {
         assertEquals(
-            ExactQuantity.of("1000", MeasurementUnit.GRAM),
+            DomainError.UnchangedQuantity,
             QuantityOperations.correct(
                 oneKg,
                 BigDecimal("1000"),
                 MeasurementUnit.GRAM,
-            ).successValue(),
+            ).failureError(),
         )
     }
 
     @Test fun correctNegativeFails() {
         assertEquals(
-            DomainError.NegativeQuantity,
+            DomainError.AmountMustBePositive,
             QuantityOperations.correct(
                 oneGram,
                 BigDecimal("-1"),

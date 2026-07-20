@@ -28,6 +28,47 @@ SERIAL="$(
 
 echo "Using Android device: $SERIAL"
 
+echo "--- Stabilizing emulator ---"
+adb -s "$SERIAL" wait-for-device
+
+MAX_RETRIES=30
+RETRY_COUNT=0
+while [ "$(adb -s "$SERIAL" shell getprop sys.boot_completed | tr -d '\r')" != "1" ]; do
+    if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+        echo "Timeout waiting for sys.boot_completed"
+        exit 1
+    fi
+    echo "Waiting for sys.boot_completed... ($RETRY_COUNT/$MAX_RETRIES)"
+    sleep 5
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+done
+
+# Wait for essential services
+adb -s "$SERIAL" shell service check activity
+adb -s "$SERIAL" shell service check window
+adb -s "$SERIAL" shell service check package
+
+# Disable animations
+adb -s "$SERIAL" shell settings put global window_animation_scale 0
+adb -s "$SERIAL" shell settings put global transition_animation_scale 0
+adb -s "$SERIAL" shell settings put global animator_duration_scale 0
+
+# Unlock and wake
+adb -s "$SERIAL" shell input keyevent 224
+adb -s "$SERIAL" shell wm dismiss-keyguard
+
+# Ensure System UI / Launcher is responsive
+RETRY_COUNT=0
+while ! adb -s "$SERIAL" shell uiautomator dump /sdcard/dump.xml > /dev/null 2>&1; do
+    if [ "$RETRY_COUNT" -ge 10 ]; then
+        echo "System UI not responding to uiautomator dump"
+        break
+    fi
+    echo "Waiting for System UI responsiveness... ($RETRY_COUNT/10)"
+    sleep 2
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+done
+
 mkdir -p .maestro/results
 
 echo "--- Installing Maestro 2.6.0 ---"

@@ -1,5 +1,7 @@
 package com.luisete.queda.core.designsystem.component
 
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -11,6 +13,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -103,6 +106,27 @@ class DesignSystemTest {
             }
         }
         composeTestRule.onNodeWithContentDescription("Busy...").assertIsDisplayed()
+    }
+
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    @Test
+    fun modalBottomSheet_exposesContentWithTags() {
+        composeTestRule.setContent {
+            QuedaTheme {
+                QuedaModalBottomSheet(
+                    onDismissRequest = {},
+                    modifier = Modifier.testTag("sheet_tag"),
+                ) {
+                    androidx.compose.material3.Text(
+                        text = "Inside Modal",
+                        modifier = Modifier.testTag("tag_inside"),
+                    )
+                }
+            }
+        }
+        composeTestRule.onNodeWithTag("sheet_tag", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("tag_inside", useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Inside Modal").assertIsDisplayed()
     }
 
     @Test

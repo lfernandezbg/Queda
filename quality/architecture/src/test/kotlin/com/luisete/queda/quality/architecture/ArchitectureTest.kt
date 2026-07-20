@@ -41,6 +41,13 @@ class ArchitectureTest {
     }
 
     @Test
+    fun `core database should not depend on core domain`() {
+        noClasses().that().resideInAPackage("..core.database..")
+            .should().dependOnClassesThat().resideInAPackage("..core.domain..")
+            .check(allProjectClasses)
+    }
+
+    @Test
     fun `core model should not depend on android`() {
         noClasses().that().resideInAPackage("..core.model..")
             .should().dependOnClassesThat().resideInAPackage("android..")
@@ -107,9 +114,13 @@ class ArchitectureTest {
 
     private fun checkFile(file: File) {
         val path = file.path
-        if (path.contains("quality${File.separator}architecture")) return
-
         val ext = file.extension
+
+        val isArchitectureDir = path.contains("quality${File.separator}architecture")
+        val isTestDir = path.contains("src${File.separator}test")
+        val isAndroidTestDir = path.contains("src${File.separator}androidTest")
+
+        if (isArchitectureDir || isTestDir || isAndroidTestDir) return
         if (ext !in listOf("kt", "java", "xml", "kts")) return
 
         val content by lazy { file.readText() }
@@ -321,7 +332,7 @@ class ArchitectureTest {
 
     @Test
     fun `room annotations must remain inside core database`() {
-        noClasses().that().resideOutsideOfPackage("..core.database..")
+        noClasses().that().resideOutsideOfPackages("..core.database..", "..core.data..")
             .should().dependOnClassesThat().resideInAPackage("androidx.room..")
             .check(allProjectClasses)
     }

@@ -98,6 +98,9 @@ object QuantityOperations {
         toConsume: ExactQuantity,
     ): DomainResult<ExactQuantity> =
         when {
+            toConsume.amount.signum() <= 0 ->
+                Failure(DomainError.AmountMustBePositive)
+
             available.unit.dimension != toConsume.unit.dimension ->
                 Failure(
                     DomainError.IncompatibleQuantityDimensions,
@@ -114,8 +117,8 @@ object QuantityOperations {
                         toConsume.unit,
                     )
 
-                if (consumptionInBase > availableInBase) {
-                    Failure(DomainError.InsufficientQuantity)
+                if (consumptionInBase >= availableInBase) {
+                    Failure(DomainError.AmountMustBeLowerThanCurrent)
                 } else {
                     resolveMixedResult(
                         amountInBase = availableInBase.subtract(consumptionInBase),
@@ -130,16 +133,21 @@ object QuantityOperations {
         newAmount: BigDecimal,
         newUnit: MeasurementUnit,
     ): DomainResult<ExactQuantity> {
-        if (current.unit.dimension != newUnit.dimension) {
-            return Failure(
-                DomainError.IncompatibleQuantityDimensions,
-            )
-        }
+        val currentInBase = toBaseUnitAmount(current.amount, current.unit)
+        val newInBase = toBaseUnitAmount(newAmount, newUnit)
 
-        return createExactResult(
-            amount = newAmount,
-            unit = newUnit,
-        )
+        return when {
+            current.unit.dimension != newUnit.dimension ->
+                Failure(DomainError.IncompatibleQuantityDimensions)
+
+            newAmount.signum() <= 0 ->
+                Failure(DomainError.AmountMustBePositive)
+
+            currentInBase.compareTo(newInBase) == 0 ->
+                Failure(DomainError.UnchangedQuantity)
+
+            else -> createExactResult(amount = newAmount, unit = newUnit)
+        }
     }
 
     fun consumeApproximate(

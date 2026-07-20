@@ -1,0 +1,208 @@
+package com.luisete.queda.core.data.inventory
+
+import android.content.Context
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.luisete.queda.core.database.InventoryDao
+import com.luisete.queda.core.database.ProductEntity
+import com.luisete.queda.core.database.QuedaDatabase
+import com.luisete.queda.core.database.StockItemEntity
+import com.luisete.queda.core.domain.inventory.AddExactItemRepositoryResult
+import com.luisete.queda.core.domain.inventory.QuantityMutationResult
+import com.luisete.queda.core.domain.result.DomainError
+import com.luisete.queda.core.model.id.StockItemId
+import com.luisete.queda.core.model.quantity.ExactQuantity
+import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.testing.InventoryTestData
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class OfflineInventoryRepositoryTest {
+    private lateinit var db: QuedaDatabase
+    private lateinit var dao: InventoryDao
+    private lateinit var repository: OfflineInventoryRepository
+    private val householdId = InventoryTestData.householdId
+
+    @Before
+    fun setUp() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        db =
+            Room.inMemoryDatabaseBuilder(context, QuedaDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
+        dao = db.inventoryDao()
+        repository = OfflineInventoryRepository(db, dao)
+    }
+
+    @After
+    fun tearDown() {
+        db.close()
+    }
+
+    @Test
+    fun addedDatabaseResultMapsToAdded() =
+        runTest {
+            val item = InventoryTestData.createInventoryItem()
+            val result = repository.addExactInventoryItem(item.product, item.stockItem)
+            assertEquals(AddExactItemRepositoryResult.Added, result)
+        }
+
+    @Test
+    fun duplicateDatabaseResultMapsToDuplicateProductName() =
+        runTest {
+            val item = InventoryTestData.createInventoryItem()
+            repository.addExactInventoryItem(item.product, item.stockItem)
+            val result = repository.addExactInventoryItem(item.product, item.stockItem)
+            assertEquals(AddExactItemRepositoryResult.DuplicateProductName, result)
+        }
+
+    @Test
+    fun allFiveUnitsPreserveAmountAndUnit() =
+        runTest {
+            val units =
+                listOf(
+                    MeasurementUnit.UNIT,
+                    MeasurementUnit.GRAM,
+                    MeasurementUnit.KILOGRAM,
+                    MeasurementUnit.MILLILITER,
+                    MeasurementUnit.LITER,
+                )
+            units.forEach { unit ->
+                val product = InventoryTestData.createProduct(id = "p-${unit.name}", name = "Product ${unit.name}")
+                val stockItem =
+                    InventoryTestData.createStockItem(
+                        id = "s-${unit.name}",
+                        productId = product.id.value,
+                        quantity = ExactQuantity.of("1.234", unit),
+                    )
+
+                repository.addExactInventoryItem(product, stockItem)
+            }
+
+            val res = repository.observeExactInventoryItems(householdId).first()
+            assertEquals(5, res.size)
+
+            units.forEach { unit ->
+                val found = res.find { it.stockItem.id.value == "s-${unit.name}" }
+                assertTrue("Item with unit ${unit.name} should be found", found != null)
+                assertEquals("1.234", found?.stockItem?.quantity?.amount?.toPlainString())
+                assertEquals(unit, found?.stockItem?.quantity?.unit)
+            }
+        }
+
+    @Test
+    fun observedItemsAreSortedByNormalizedName() =
+        runTest {
+            val p1 = InventoryTestData.createProduct(id = "p1", name = "Zebra")
+            val s1 = InventoryTestData.createStockItem(id = "s1", productId = p1.id.value)
+            val p2 = InventoryTestData.createProduct(id = "p2", name = "Apple")
+            val s2 = InventoryTestData.createStockItem(id = "s2", productId = p2.id.value)
+
+            repository.addExactInventoryItem(p1, s1)
+            repository.addExactInventoryItem(p2, s2)
+
+            val result = repository.observeExactInventoryItems(householdId).first()
+            assertEquals(2, result.size)
+            assertEquals("Apple", result[0].product.name.displayValue)
+            assertEquals("Zebra", result[1].product.name.displayValue)
+        }
+
+    @Test
+    fun consumeExactQuantityPersistsResult() =
+        runTest {
+            val sid = "s1"
+            dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+
+            val result =
+                repository.consumeExactQuantity(
+                    StockItemId.from(sid),
+                    ExactQuantity.of("3", MeasurementUnit.UNIT),
+                )
+
+            val success = result as QuantityMutationResult.Success
+            assertEquals("7", success.newQuantity.amount.toPlainString())
+
+            val persisted = dao.getStockItemById(sid)
+            assertEquals("7", persisted?.quantityAmount)
+        }
+
+    @Test
+    fun correctExactQuantityPersistsResult() =
+        runTest {
+            val sid = "s1"
+            dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+
+            val result =
+                repository.correctExactQuantity(
+                    StockItemId.from(sid),
+                    ExactQuantity.of("5", MeasurementUnit.UNIT),
+                )
+
+            val success = result as QuantityMutationResult.Success
+            assertEquals("5", success.newQuantity.amount.toPlainString())
+
+            val persisted = dao.getStockItemById(sid)
+            assertEquals("5", persisted?.quantityAmount)
+        }
+
+    @Test
+    fun mutationWithMissingProductReturnsProductNotFound() =
+        runTest {
+            val sid = StockItemId.from("missing")
+            val result = repository.consumeExactQuantity(sid, ExactQuantity.of("1", MeasurementUnit.UNIT))
+
+            val failure = result as QuantityMutationResult.Failure
+            assertEquals(DomainError.ProductNotFound, failure.error)
+        }
+
+    @Test
+    fun rejectedMutationPerformsNoWrite() =
+        runTest {
+            val sid = "s1"
+            dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+
+            // Consume more than available
+            val result =
+                repository.consumeExactQuantity(
+                    StockItemId.from(sid),
+                    ExactQuantity.of("11", MeasurementUnit.UNIT),
+                )
+
+            assertTrue(result is QuantityMutationResult.Failure)
+            assertEquals(DomainError.AmountMustBeLowerThanCurrent, (result as QuantityMutationResult.Failure).error)
+
+            val persisted = dao.getStockItemById(sid)
+            assertEquals("10", persisted?.quantityAmount)
+        }
+
+    @Test
+    fun unchangedCorrectionPerformsNoWrite() =
+        runTest {
+            val sid = "s1"
+            dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+
+            val result =
+                repository.correctExactQuantity(
+                    StockItemId.from(sid),
+                    ExactQuantity.of("10", MeasurementUnit.UNIT),
+                )
+
+            assertTrue(result is QuantityMutationResult.Failure)
+            assertEquals(DomainError.UnchangedQuantity, (result as QuantityMutationResult.Failure).error)
+
+            val persisted = dao.getStockItemById(sid)
+            assertEquals("10", persisted?.quantityAmount)
+        }
+}

@@ -196,7 +196,7 @@ class AddExactItemViewModelTest {
     fun secondSubmitWhileSavingIsIgnored() =
         runTest(testDispatcher) {
             val viewModel = AddExactItemViewModel(useCase, SavedStateHandle())
-            repository.suspendNextAdd()
+            repository.suspendNextMutation()
             viewModel.onNameChange("Milk")
             viewModel.onQuantityChange("1")
 
@@ -216,7 +216,7 @@ class AddExactItemViewModelTest {
             advanceUntilIdle()
             assertEquals(1, repository.addCallsCount)
 
-            repository.completeSuspendedAdd()
+            repository.completeSuspendedMutation()
             advanceUntilIdle()
 
             assertEquals(1, repository.addCallsCount)
