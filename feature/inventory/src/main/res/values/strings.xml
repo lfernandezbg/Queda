@@ -8,6 +8,8 @@
     <string name="inventory_empty_title">Tu inventario está vacío</string>
     <string name="inventory_empty_body">Añade tu primer alimento para saber qué tienes en casa.</string>
     <string name="inventory_add_button">Añadir alimento</string>
+    <string name="inventory_scan_button_label">Escanear código de barras</string>
+    <string name="inventory_scan_button_description">Escanear código de barras</string>
     <string name="inventory_error_message">No se ha podido cargar el inventario.</string>
     <string name="inventory_loading_description">Cargando inventario…</string>
     <string name="inventory_retry_button">Reintentar</string>
@@ -34,6 +36,18 @@
     <string name="inventory_quantity_format">%1$s %2$s</string>
 
     <string name="back">Volver</string>
+
+    <string name="barcode_scanner_title">Escanear código</string>
+    <string name="barcode_scanner_permission_explanation">Se necesita permiso de cámara para escanear códigos de barras.</string>
+    <string name="barcode_scanner_permission_retry">Reintentar</string>
+    <string name="barcode_scanner_permission_permanently_denied">Has denegado el permiso de cámara permanentemente. Debes activarlo en los ajustes.</string>
+    <string name="barcode_scanner_open_settings">Abrir ajustes</string>
+    <string name="barcode_error_invalid_check_digit">Código no válido (dígito de control incorrecto).</string>
+    <string name="barcode_error_unsupported_format">Formato de código no compatible.</string>
+    <string name="barcode_error_non_digit">El código debe contener solo números.</string>
+    <string name="barcode_error_storage_failure">Error al buscar el producto. Inténtalo de nuevo.</string>
+    <string name="add_exact_item_barcode_associated">Código de barras asociado: %1$s</string>
+    <string name="error_duplicate_barcode">Este código de barras ya está asociado a otro alimento.</string>
 
     <string name="error_name_blank">Introduce un nombre.</string>
     <string name="error_name_too_long">El nombre no puede superar 80 caracteres.</string>

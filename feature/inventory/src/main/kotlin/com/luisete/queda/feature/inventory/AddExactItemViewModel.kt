@@ -31,6 +31,7 @@ class AddExactItemViewModel
                     nameInput = savedStateHandle[KEY_NAME] ?: "",
                     quantityInput = savedStateHandle[KEY_QUANTITY] ?: "",
                     selectedUnit = savedStateHandle[KEY_UNIT] ?: MeasurementUnit.UNIT,
+                    barcode = savedStateHandle[KEY_BARCODE],
                 ),
             )
         val uiState: StateFlow<AddExactItemUiState> = mutableUiState.asStateFlow()
@@ -45,6 +46,7 @@ class AddExactItemViewModel
                     nameInput = name,
                     nameError = null,
                     duplicateError = false,
+                    duplicateBarcodeError = false,
                     storageError = false,
                 )
             }
@@ -56,6 +58,7 @@ class AddExactItemViewModel
                 it.copy(
                     quantityInput = quantity,
                     quantityError = null,
+                    duplicateBarcodeError = false,
                     storageError = false,
                 )
             }
@@ -66,6 +69,12 @@ class AddExactItemViewModel
             mutableUiState.update { it.copy(selectedUnit = unit) }
         }
 
+        fun onBarcodeAssociated(barcode: String) {
+            savedStateHandle[KEY_BARCODE] = barcode
+            mutableUiState.update { it.copy(barcode = barcode, duplicateBarcodeError = false) }
+        }
+
+        @Suppress("LongMethod")
         fun save() {
             if (mutableUiState.value.isSaving) return
 
@@ -75,6 +84,7 @@ class AddExactItemViewModel
                     nameError = null,
                     quantityError = null,
                     duplicateError = false,
+                    duplicateBarcodeError = false,
                     storageError = false,
                 )
             }
@@ -85,6 +95,7 @@ class AddExactItemViewModel
                         rawName = mutableUiState.value.nameInput,
                         rawQuantity = mutableUiState.value.quantityInput,
                         unit = mutableUiState.value.selectedUnit,
+                        rawBarcode = mutableUiState.value.barcode,
                     )
 
                 when (result) {
@@ -108,6 +119,15 @@ class AddExactItemViewModel
                             it.copy(
                                 isSaving = false,
                                 duplicateError = true,
+                            )
+                        }
+                    }
+
+                    AddExactInventoryItemResult.DuplicateBarcode -> {
+                        mutableUiState.update {
+                            it.copy(
+                                isSaving = false,
+                                duplicateBarcodeError = true,
                             )
                         }
                     }
@@ -143,5 +163,6 @@ class AddExactItemViewModel
             private const val KEY_NAME = "name"
             private const val KEY_QUANTITY = "quantity"
             private const val KEY_UNIT = "unit"
+            private const val KEY_BARCODE = "barcode"
         }
     }

@@ -23,7 +23,9 @@ object DatabaseModule {
             context,
             QuedaDatabase::class.java,
             "queda-database",
-        ).build()
+        )
+            .addMigrations(QuedaDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     @Singleton

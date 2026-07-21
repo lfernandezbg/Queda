@@ -62,29 +62,9 @@ $apkFile = $apks[0].FullName
 
 Invoke-CheckedCommand -Executable "adb" -Arguments "-s", $serial, "install", "-r", $apkFile
 
-$flows = @(
-    ".maestro/flows/smoke/00_launch_app.yaml",
-    ".maestro/flows/smoke/01_reset_and_launch.yaml",
-    ".maestro/flows/smoke/02_seed_empty_and_launch.yaml",
-    ".maestro/flows/smoke/03_inventory_empty_state.yaml",
-    ".maestro/flows/smoke/04_add_exact_unit_item.yaml",
-    ".maestro/flows/smoke/05_add_exact_mass_item.yaml",
-    ".maestro/flows/smoke/06_add_exact_volume_comma_item.yaml",
-    ".maestro/flows/smoke/07_add_exact_item_validation.yaml",
-    ".maestro/flows/smoke/08_duplicate_normalized_name.yaml",
-    ".maestro/flows/smoke/09_cancel_add_item.yaml",
-    ".maestro/flows/smoke/10_multiple_items_visible.yaml",
-    ".maestro/flows/smoke/11_item_persists_after_relaunch.yaml",
-    ".maestro/flows/smoke/12_consume_quantity.yaml",
-    ".maestro/flows/smoke/13_correct_quantity.yaml",
-    ".maestro/flows/smoke/14_reject_invalid_mutation.yaml"
-)
-
-foreach ($flow in $flows) {
-    Invoke-CheckedCommand -Executable "maestro" -Arguments "--device=$serial", "test", $flow
-}
-
-Invoke-CheckedCommand -Executable "maestro" -Arguments "--device=$serial", "test", ".maestro/flows/smoke", "--format", "junit", "--output", ".maestro/results/report.xml"
+Invoke-CheckedCommand `
+    -Executable "maestro" `
+    -Arguments "--device=$serial", "test", ".maestro/flows/smoke", "--format", "junit", "--output", ".maestro/results/report.xml"
 
 if (!(Test-Path ".maestro/results/report.xml")) {
     throw "Maestro report.xml not found."

@@ -55,7 +55,21 @@ class E2ECommandParserTest {
 
     @Test
     fun `parse with query`() {
+        // Reset doesn't support query
         val result = E2ECommandParser.parse("queda-e2e://reset?param=val")
+        assertTrue(result is E2ECommand.Invalid)
+    }
+
+    @Test
+    fun `parse scan command`() {
+        val result = E2ECommandParser.parse("queda-e2e://scan?barcode=12345678")
+        assertTrue(result is E2ECommand.Scan)
+        assertEquals("12345678", (result as E2ECommand.Scan).barcode)
+    }
+
+    @Test
+    fun `parse scan without barcode param`() {
+        val result = E2ECommandParser.parse("queda-e2e://scan?wrong=123")
         assertTrue(result is E2ECommand.Invalid)
     }
 

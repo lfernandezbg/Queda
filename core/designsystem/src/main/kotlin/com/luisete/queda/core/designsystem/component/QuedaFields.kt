@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
@@ -36,6 +37,7 @@ fun QuedaTextField(
             modifier
                 .fillMaxWidth()
                 .semantics {
+                    testTagsAsResourceId = true
                     if (isError && supportingText != null) {
                         error(supportingText)
                     }

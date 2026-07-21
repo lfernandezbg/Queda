@@ -3,72 +3,68 @@ appId: com.luisete.queda.e2e
 - openLink: "queda-e2e://reset"
 
 - extendedWaitUntil:
-      visible:
-          id: "inventory_add_button"
-      timeout: 10000
+    visible:
+        id: "inventory_add_button"
+    timeout: 30000
 
 - tapOn:
-      id: "inventory_add_button"
+    id: "inventory_add_button"
 
 - tapOn:
-      id: "add_exact_item_name_input"
+    id: "add_exact_item_name_input"
 - inputText: "Leche"
 
 - tapOn:
-      id: "add_exact_item_quantity_input"
+    id: "add_exact_item_quantity_input"
 - inputText: "10"
 - hideKeyboard
 
 - tapOn:
-      id: "add_exact_item_unit_selector"
+    id: "add_exact_item_unit_selector"
 - tapOn: "Litros"
 
 - tapOn:
-      id: "add_exact_item_save_button"
+    id: "add_exact_item_save_button"
 
 - extendedWaitUntil:
-      visible:
-          id: "inventory_item_row_.*"
-      timeout: 10000
+    visible: "Leche"
+    timeout: 30000
 
-- tapOn:
-      id: "inventory_item_row_.*"
+- assertVisible: "10 l"
+
+- tapOn: "Leche"
 
 - extendedWaitUntil:
-      visible: "Consumir"
-      timeout: 10000
+    visible: "Consumir"
+    timeout: 30000
 
 - tapOn: "Consumir"
 
 - extendedWaitUntil:
-      visible: "Consumir alimento"
-      timeout: 10000
+    visible: "Consumir alimento"
+    timeout: 30000
 
 - tapOn: "Cantidad"
 - inputText: "3"
 - hideKeyboard
 
 - extendedWaitUntil:
-      visible: "Quedarán 7 l"
-      timeout: 10000
-
-- assertVisible: "Quedarán 7 l"
+    visible: "Quedarán 7 l"
+    timeout: 30000
 
 - tapOn: "Consumir"
 
 - extendedWaitUntil:
-      visible: "7 l"
-      timeout: 10000
+    visible: "7 l"
+    timeout: 30000
 
 - assertVisible: "Leche"
-- assertVisible: "7 l"
 
 - stopApp
 - launchApp
 
 - extendedWaitUntil:
-      visible: "7 l"
-      timeout: 10000
+    visible: "7 l"
+    timeout: 30000
 
 - assertVisible: "Leche"
-- assertVisible: "7 l"

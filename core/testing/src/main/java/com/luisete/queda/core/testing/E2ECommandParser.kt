@@ -23,6 +23,7 @@ object E2ECommandParser {
         return when (val host = uri.host) {
             "reset" -> parseReset(uri)
             "seed" -> parseSeed(uri)
+            "scan" -> parseScan(uri)
             else -> E2ECommand.Invalid("Unknown host: $host")
         }
     }
@@ -30,24 +31,48 @@ object E2ECommandParser {
     private fun getValidationError(uri: URI): E2ECommand.Invalid? {
         return when {
             uri.scheme != SCHEME -> E2ECommand.Invalid("Invalid scheme")
-            uri.query != null -> E2ECommand.Invalid("Query not supported")
             uri.fragment != null -> E2ECommand.Invalid("Fragment not supported")
             else -> null
         }
     }
 
+    private fun parseScan(uri: URI): E2ECommand {
+        val query = uri.query ?: return E2ECommand.Invalid("Missing barcode query")
+        val barcode =
+            query.split("&")
+                .map { it.split("=") }
+                .find { it[0] == "barcode" }
+                ?.getOrNull(1)
+
+        val result =
+            if (barcode != null) {
+                E2ECommand.Scan(barcode)
+            } else {
+                E2ECommand.Invalid("Missing barcode parameter")
+            }
+        return result
+    }
+
     private fun parseReset(uri: URI): E2ECommand {
-        return if (uri.path != "" && uri.path != "/") {
-            E2ECommand.Invalid("Invalid path for reset")
-        } else {
-            E2ECommand.Reset
-        }
+        val result =
+            when {
+                uri.path != "" && uri.path != "/" -> E2ECommand.Invalid("Invalid path for reset")
+                uri.query != null -> E2ECommand.Invalid("Query not supported for reset")
+                else -> E2ECommand.Reset
+            }
+        return result
     }
 
     private fun parseSeed(uri: URI): E2ECommand {
-        return when (uri.path) {
-            "/empty" -> E2ECommand.SeedEmpty
-            else -> E2ECommand.Invalid("Unknown seed: ${uri.path}")
-        }
+        val result =
+            if (uri.query != null) {
+                E2ECommand.Invalid("Query not supported for seed")
+            } else {
+                when (uri.path) {
+                    "/empty" -> E2ECommand.SeedEmpty
+                    else -> E2ECommand.Invalid("Unknown seed: ${uri.path}")
+                }
+            }
+        return result
     }
 }

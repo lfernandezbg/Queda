@@ -23,6 +23,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.luisete.queda.core.designsystem.theme.QuedaSpacing
@@ -38,7 +40,10 @@ fun QuedaScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
-        modifier = modifier,
+        modifier =
+            modifier.semantics {
+                testTagsAsResourceId = true
+            },
         topBar = topBar,
         bottomBar = bottomBar,
         snackbarHost = snackbarHost,
@@ -57,7 +62,12 @@ fun QuedaBottomActionBar(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics {
+                    testTagsAsResourceId = true
+                },
         color = MaterialTheme.colorScheme.background,
         tonalElevation = 0.dp,
     ) {
@@ -92,7 +102,10 @@ fun QuedaTopAppBar(
                 fontWeight = FontWeight.Bold,
             )
         },
-        modifier = modifier,
+        modifier =
+            modifier.semantics {
+                testTagsAsResourceId = true
+            },
         navigationIcon = navigationIcon,
         actions = actions,
         windowInsets = windowInsets,

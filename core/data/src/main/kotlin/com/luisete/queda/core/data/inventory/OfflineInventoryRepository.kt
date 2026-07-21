@@ -5,6 +5,7 @@ import com.luisete.queda.core.database.AddExactInventoryItemDbResult
 import com.luisete.queda.core.database.InventoryDao
 import com.luisete.queda.core.database.QuedaDatabase
 import com.luisete.queda.core.domain.inventory.AddExactItemRepositoryResult
+import com.luisete.queda.core.domain.inventory.FindItemByBarcodeResult
 import com.luisete.queda.core.domain.inventory.InventoryRepository
 import com.luisete.queda.core.domain.inventory.QuantityMutationResult
 import com.luisete.queda.core.domain.quantity.QuantityOperations
@@ -12,6 +13,7 @@ import com.luisete.queda.core.domain.result.DomainError
 import com.luisete.queda.core.domain.result.DomainResult
 import com.luisete.queda.core.domain.result.Failure
 import com.luisete.queda.core.domain.result.Success
+import com.luisete.queda.core.model.barcode.Barcode
 import com.luisete.queda.core.model.id.HouseholdId
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.inventory.InventoryItem
@@ -50,6 +52,8 @@ class OfflineInventoryRepository
                     AddExactInventoryItemDbResult.Added -> AddExactItemRepositoryResult.Added
                     AddExactInventoryItemDbResult.DuplicateProductName ->
                         AddExactItemRepositoryResult.DuplicateProductName
+                    AddExactInventoryItemDbResult.DuplicateBarcode ->
+                        AddExactItemRepositoryResult.DuplicateBarcode
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -111,5 +115,20 @@ class OfflineInventoryRepository
                 throw e
             } catch (e: Exception) {
                 QuantityMutationResult.Failure(DomainError.StorageFailure)
+            }
+
+        @Suppress("TooGenericExceptionCaught", "SwallowedException")
+        override suspend fun findItemByBarcode(barcode: Barcode): FindItemByBarcodeResult =
+            try {
+                val entity = inventoryDao.getItemByBarcode(barcode.value)
+                if (entity != null) {
+                    FindItemByBarcodeResult.Found(entity.toDomain())
+                } else {
+                    FindItemByBarcodeResult.NotFound
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                FindItemByBarcodeResult.StorageFailure
             }
     }

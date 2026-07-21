@@ -1,5 +1,7 @@
 package com.luisete.queda.core.domain.inventory
 
+import com.luisete.queda.core.model.barcode.Barcode
+import com.luisete.queda.core.model.barcode.BarcodeCreationResult
 import com.luisete.queda.core.model.id.ProductId
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.inventory.InventoryItem
@@ -21,13 +23,23 @@ class AddExactInventoryItemUseCase
             rawName: String,
             rawQuantity: String,
             unit: MeasurementUnit,
+            rawBarcode: String? = null,
         ): AddExactInventoryItemResult {
             val nameResult = ProductName.create(rawName)
             val quantityResult = ExactQuantityInputParser.parse(rawQuantity, unit)
 
+            val barcodeResult =
+                rawBarcode?.let {
+                    Barcode.create(it)
+                }
+
             val isInvalid =
                 nameResult !is ProductNameCreationResult.Success ||
-                    quantityResult !is ExactQuantityInputResult.Success
+                    quantityResult !is ExactQuantityInputResult.Success ||
+                    barcodeResult is BarcodeCreationResult.InvalidCheckDigit ||
+                    barcodeResult is BarcodeCreationResult.UnsupportedFormat ||
+                    barcodeResult is BarcodeCreationResult.NonDigit
+
             if (isInvalid) {
                 return AddExactInventoryItemResult.InvalidInput(
                     nameReason =
@@ -49,11 +61,14 @@ class AddExactInventoryItemUseCase
             val productId = ProductId.newId()
             val stockItemId = StockItemId.newId()
 
+            val barcode = (barcodeResult as? BarcodeCreationResult.Success)?.barcode
+
             val product =
                 Product(
                     id = productId,
                     householdId = householdId,
                     name = nameResult.productName,
+                    barcode = barcode,
                 )
             val stockItem =
                 StockItem(
@@ -67,6 +82,7 @@ class AddExactInventoryItemUseCase
             return when (repository.addExactInventoryItem(product, stockItem)) {
                 AddExactItemRepositoryResult.Added -> AddExactInventoryItemResult.Added(inventoryItem)
                 AddExactItemRepositoryResult.DuplicateProductName -> AddExactInventoryItemResult.DuplicateProductName
+                AddExactItemRepositoryResult.DuplicateBarcode -> AddExactInventoryItemResult.DuplicateBarcode
                 AddExactItemRepositoryResult.StorageFailure -> AddExactInventoryItemResult.StorageFailure
             }
         }

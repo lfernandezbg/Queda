@@ -1,0 +1,41 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+
+- extendedWaitUntil:
+    visible:
+        id: "inventory_empty_state"
+    timeout: 30000
+
+- openLink: "queda-e2e://scan?barcode=4006381333931"
+
+- extendedWaitUntil:
+    visible: "Añadir alimento"
+    timeout: 30000
+
+- tapOn: "Nombre"
+- inputText: "Stabilo"
+
+- tapOn: "Cantidad"
+- inputText: "10"
+
+- hideKeyboard
+
+- tapOn:
+    id: "add_exact_item_save_button"
+
+- extendedWaitUntil:
+    visible: "10 ud"
+    timeout: 30000
+
+- assertVisible: "Stabilo"
+- assertVisible: "1 alimento"
+
+# Scan same barcode again
+- openLink: "queda-e2e://scan?barcode=4006381333931"
+
+- extendedWaitUntil:
+    visible: "Cantidad actual: 10 ud"
+    timeout: 30000
+
+- assertVisible: "Stabilo"

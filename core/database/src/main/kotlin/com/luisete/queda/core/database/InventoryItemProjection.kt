@@ -5,6 +5,7 @@ data class InventoryItemProjection(
     val productHouseholdId: String,
     val productDisplayName: String,
     val productNormalizedName: String,
+    val productBarcode: String?,
     val stockItemId: String,
     val stockHouseholdId: String,
     val stockProductId: String,

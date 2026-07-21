@@ -20,9 +20,11 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,12 +66,14 @@ import com.luisete.queda.core.model.quantity.MeasurementUnit
 fun InventoryRoute(
     viewModel: InventoryViewModel,
     onAddItem: () -> Unit,
+    onScanBarcode: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     InventoryScreen(
         uiState = uiState,
         onAddItem = onAddItem,
+        onScanBarcode = onScanBarcode,
         onRetry = viewModel::retry,
         onItemClick = viewModel::onItemClick,
         onDismissSheet = viewModel::onDismissSheet,
@@ -82,10 +87,11 @@ fun InventoryRoute(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Suppress("FunctionNaming", "LongParameterList", "TooManyFunctions")
+@Suppress("FunctionNaming", "LongParameterList", "TooManyFunctions", "LongMethod")
 fun InventoryScreen(
     uiState: InventoryUiState,
     onAddItem: () -> Unit,
+    onScanBarcode: () -> Unit,
     onRetry: () -> Unit,
     onItemClick: (InventoryItemUiModel) -> Unit,
     onDismissSheet: () -> Unit,
@@ -96,23 +102,56 @@ fun InventoryScreen(
     onConfirm: () -> Unit,
 ) {
     QuedaScaffold(
-        modifier = Modifier.testTag(InventoryTestTags.INVENTORY_SCREEN),
+        modifier =
+            Modifier
+                .semantics { testTagsAsResourceId = true }
+                .testTag(InventoryTestTags.INVENTORY_SCREEN),
         topBar = {
             QuedaTopAppBar(
                 title = stringResource(R.string.inventory_title),
+                modifier = Modifier.testTag(InventoryTestTags.INVENTORY_TOP_BAR),
+                actions = {
+                    IconButton(
+                        onClick = onScanBarcode,
+                        modifier =
+                            Modifier
+                                .semantics { testTagsAsResourceId = true }
+                                .testTag(InventoryTestTags.INVENTORY_SCAN_BUTTON),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = stringResource(R.string.inventory_scan_button_description),
+                        )
+                    }
+                },
             )
         },
         bottomBar = {
             if (uiState is InventoryUiState.Content) {
                 QuedaBottomActionBar {
-                    QuedaPrimaryButton(
-                        text = stringResource(R.string.inventory_add_button),
-                        onClick = onAddItem,
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .testTag(InventoryTestTags.INVENTORY_ADD_BUTTON),
-                    )
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        IconButton(
+                            onClick = onScanBarcode,
+                            modifier =
+                                Modifier
+                                    .semantics { testTagsAsResourceId = true }
+                                    .testTag(InventoryTestTags.INVENTORY_SCAN_BUTTON),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = stringResource(R.string.inventory_scan_button_description),
+                            )
+                        }
+                        Spacer(modifier = Modifier.size(QuedaSpacing.Small))
+                        QuedaPrimaryButton(
+                            text = stringResource(R.string.inventory_add_button),
+                            onClick = onAddItem,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .testTag(InventoryTestTags.INVENTORY_ADD_BUTTON),
+                        )
+                    }
                 }
             }
         },
@@ -121,6 +160,7 @@ fun InventoryScreen(
             uiState = uiState,
             padding = padding,
             onAddItem = onAddItem,
+            onScanBarcode = onScanBarcode,
             onRetry = onRetry,
             onItemClick = onItemClick,
         )
@@ -140,11 +180,12 @@ fun InventoryScreen(
 }
 
 @Composable
-@Suppress("FunctionNaming", "LongParameterList")
+@Suppress("FunctionNaming", "LongParameterList", "LongMethod")
 private fun InventoryScreenContent(
     uiState: InventoryUiState,
     padding: PaddingValues,
     onAddItem: () -> Unit,
+    onScanBarcode: () -> Unit,
     onRetry: () -> Unit,
     onItemClick: (InventoryItemUiModel) -> Unit,
 ) {
@@ -168,11 +209,28 @@ private fun InventoryScreenContent(
                     description = stringResource(R.string.inventory_empty_body),
                     modifier = Modifier.testTag(InventoryTestTags.INVENTORY_EMPTY_STATE),
                     action = {
-                        QuedaPrimaryButton(
-                            text = stringResource(R.string.inventory_add_button),
-                            onClick = onAddItem,
-                            modifier = Modifier.testTag(InventoryTestTags.INVENTORY_ADD_BUTTON),
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            QuedaPrimaryButton(
+                                text = stringResource(R.string.inventory_add_button),
+                                onClick = onAddItem,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .testTag(InventoryTestTags.INVENTORY_ADD_BUTTON),
+                            )
+                            Spacer(modifier = Modifier.height(QuedaSpacing.Small))
+                            QuedaPrimaryButton(
+                                text = stringResource(R.string.inventory_scan_button_label),
+                                onClick = onScanBarcode,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .testTag(InventoryTestTags.INVENTORY_SCAN_BUTTON),
+                            )
+                        }
                     },
                 )
             }
@@ -689,6 +747,7 @@ fun InventoryEmptyPreview() {
         InventoryScreen(
             uiState = InventoryUiState.Empty,
             onAddItem = {},
+            onScanBarcode = {},
             onRetry = {},
             onItemClick = {},
             onDismissSheet = {},
@@ -716,6 +775,7 @@ fun InventoryContentPreview() {
                         ),
                 ),
             onAddItem = {},
+            onScanBarcode = {},
             onRetry = {},
             onItemClick = {},
             onDismissSheet = {},

@@ -18,6 +18,8 @@ sealed interface AddExactInventoryItemResult {
 
     data object DuplicateProductName : AddExactInventoryItemResult
 
+    data object DuplicateBarcode : AddExactInventoryItemResult
+
     data object StorageFailure : AddExactInventoryItemResult
 }
 
