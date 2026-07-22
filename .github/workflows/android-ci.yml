@@ -58,9 +58,6 @@ jobs:
       - name: Build Release
         run: ./gradlew :app:assembleRelease
 
-      - name: Build E2E
-        run: ./gradlew :app:assembleE2E
-
       - name: Verify Release Isolation
         run: ./scripts/verify-release-isolation.sh
 

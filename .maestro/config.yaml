@@ -5,7 +5,3 @@ testOutputDir: "results"
 
 executionOrder:
   continueOnFailure: false
-  flowsOrder:
-    - "00_launch_app"
-    - "01_reset_and_launch"
-    - "02_seed_empty_and_launch"

@@ -1,5 +1,6 @@
 param (
-    [string]$DeviceSerial
+    [string]$DeviceSerial,
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -7,12 +8,13 @@ Set-StrictMode -Version Latest
 
 . "$PSScriptRoot\Invoke-CheckedCommand.ps1"
 
-Write-Host "--- Iteration 1: Maestro Smoke ---"
+Write-Host "--- Maestro Smoke (Local) ---"
 
-if (Test-Path ".maestro/results") {
-    Remove-Item -Path ".maestro/results" -Recurse -Force
+$resultsDir = ".maestro/results"
+if (Test-Path $resultsDir) {
+    Remove-Item -Path $resultsDir -Recurse -Force
 }
-New-Item -ItemType Directory -Path ".maestro/results" -Force
+New-Item -ItemType Directory -Path $resultsDir -Force
 
 if (!(Get-Command maestro -ErrorAction SilentlyContinue)) {
     throw "Maestro CLI not found."
@@ -51,7 +53,10 @@ if ($DeviceSerial) {
 
 Write-Host "Using device: $serial"
 
-Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments ":app:assembleE2E"
+if (!$SkipBuild) {
+    Write-Host "Building E2E APK..."
+    Invoke-CheckedCommand -Executable ".\gradlew.bat" -Arguments ":app:assembleE2E"
+}
 
 $apkPath = "app/build/outputs/apk/e2e"
 $apks = @(Get-ChildItem -Path $apkPath -Filter "*.apk")
@@ -60,17 +65,45 @@ if ($apks.Count -ne 1) {
 }
 $apkFile = $apks[0].FullName
 
-Invoke-CheckedCommand -Executable "adb" -Arguments "-s", $serial, "install", "-r", $apkFile
+Write-Host "Installing $apkFile (non-streaming)..."
+Invoke-CheckedCommand -Executable "adb" -Arguments "-s", $serial, "install", "--no-streaming", "-r", $apkFile
+
+$flows = @(
+    Get-ChildItem -Path ".maestro/flows/smoke" -Filter "*.yaml" -File |
+        Sort-Object Name |
+        ForEach-Object { $_.FullName }
+)
+
+if ($flows.Count -eq 0) {
+    throw "No Maestro flows found."
+}
+
+Write-Host "Running Maestro tests in .maestro/flows/smoke ..."
+$maestroArguments = @(
+    "--device=$serial",
+    "test",
+    "--config",
+    ".maestro/config.yaml"
+)
+$maestroArguments += $flows
+$maestroArguments += @(
+    "--format",
+    "junit",
+    "--output",
+    "$resultsDir/report.xml",
+    "--test-output-dir",
+    "$resultsDir/maestro-artifacts"
+)
 
 Invoke-CheckedCommand `
     -Executable "maestro" `
-    -Arguments "--device=$serial", "test", ".maestro/flows/smoke", "--format", "junit", "--output", ".maestro/results/report.xml"
+    -Arguments $maestroArguments
 
-if (!(Test-Path ".maestro/results/report.xml")) {
+if (!(Test-Path "$resultsDir/report.xml")) {
     throw "Maestro report.xml not found."
 }
 
-$reportContent = Get-Content ".maestro/results/report.xml" -Raw
+$reportContent = Get-Content "$resultsDir/report.xml" -Raw
 if ([string]::IsNullOrWhiteSpace($reportContent)) {
     throw "Maestro report.xml is empty."
 }
