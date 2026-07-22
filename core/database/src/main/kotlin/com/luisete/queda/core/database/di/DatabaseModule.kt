@@ -24,7 +24,10 @@ object DatabaseModule {
             QuedaDatabase::class.java,
             "queda-database",
         )
-            .addMigrations(QuedaDatabase.MIGRATION_1_2)
+            .addMigrations(
+                QuedaDatabase.MIGRATION_1_2,
+                QuedaDatabase.MIGRATION_2_3,
+            )
             .build()
 
     @Provides

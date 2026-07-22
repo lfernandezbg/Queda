@@ -12,6 +12,7 @@ import com.luisete.queda.core.model.product.ProductName
 import com.luisete.queda.core.model.product.ProductNameCreationResult
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.StockQuantity
 import java.math.BigDecimal
 
 object InventoryTestData {
@@ -45,7 +46,7 @@ object InventoryTestData {
     fun createStockItem(
         id: String = "s1",
         productId: String = "p1",
-        quantity: ExactQuantity = ExactQuantity.of("1", MeasurementUnit.UNIT),
+        quantity: StockQuantity = ExactQuantity.of("1", MeasurementUnit.UNIT),
     ): StockItem =
         StockItem(
             id = StockItemId.from(id),
@@ -62,6 +63,7 @@ object InventoryTestData {
         productId: String = "p1",
         stockItemId: String = "s1",
         barcode: String? = null,
+        quantity: StockQuantity? = null,
     ): InventoryItem {
         val productName =
             when (val res = ProductName.create(name)) {
@@ -82,12 +84,13 @@ object InventoryTestData {
                 name = productName,
                 barcode = barcodeDomain,
             )
+        val finalQuantity = quantity ?: ExactQuantity.of(BigDecimal(amount), unit)
         val stockItem =
             StockItem(
                 id = StockItemId.from(stockItemId),
                 householdId = householdId,
                 productId = product.id,
-                quantity = ExactQuantity.of(BigDecimal(amount), unit),
+                quantity = finalQuantity,
             )
         return InventoryItem(product, stockItem)
     }

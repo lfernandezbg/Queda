@@ -4,6 +4,7 @@ import com.luisete.queda.core.model.id.ProductId
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.product.ProductName
 import com.luisete.queda.core.model.product.ProductNameCreationResult
+import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import com.luisete.queda.core.testing.FakeCurrentHouseholdIdProvider
 import com.luisete.queda.core.testing.FakeInventoryRepository
@@ -98,7 +99,8 @@ class InventoryDomainPropertyTests {
             val useCase = AddExactInventoryItemUseCase(repository, FakeCurrentHouseholdIdProvider())
             checkAll(config, validNameArb, amountArb, Arb.enum<MeasurementUnit>()) { name, amount, unit ->
                 val res = useCase(name, amount.toPlainString(), unit).addedItem()
-                res.stockItem.quantity.unit shouldBe unit
+                val quantity = res.stockItem.quantity as ExactQuantity
+                quantity.unit shouldBe unit
             }
         }
 
@@ -109,7 +111,8 @@ class InventoryDomainPropertyTests {
             val useCase = AddExactInventoryItemUseCase(repository, FakeCurrentHouseholdIdProvider())
             checkAll(config, validNameArb, amountArb) { name, amount ->
                 val res = useCase(name, amount.toPlainString(), MeasurementUnit.UNIT).addedItem()
-                res.stockItem.quantity.amount.compareTo(amount) shouldBe 0
+                val quantity = res.stockItem.quantity as ExactQuantity
+                quantity.amount.compareTo(amount) shouldBe 0
             }
         }
 

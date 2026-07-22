@@ -1,0 +1,21 @@
+appId: com.luisete.queda.e2e
+---
+- runFlow: 01_reset_and_launch.yaml
+- openLink: "queda-e2e://scan?barcode=4006381333931"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Presence Scanned"
+- tapOn:
+    id: "add_item_mode_presence"
+- tapOn:
+    id: "add_exact_item_save_button"
+- extendedWaitUntil:
+    visible: "Presence Scanned"
+- openLink: "queda-e2e://scan?barcode=4006381333931"
+- extendedWaitUntil:
+    visible:
+      id: "presence_action_sheet"
+- extendedWaitUntil:
+    visible: "Presence Scanned"
+- extendedWaitUntil:
+    visible: "Estado actual: Hay"

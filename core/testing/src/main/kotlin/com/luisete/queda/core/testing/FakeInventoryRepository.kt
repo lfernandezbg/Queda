@@ -43,6 +43,9 @@ class FakeInventoryRepository : InventoryRepository {
 
     val findItemByBarcodeCalls: MutableList<Barcode> = Collections.synchronizedList(mutableListOf())
 
+    val setPresenceCalls: MutableList<Pair<StockItemId, Boolean>> =
+        Collections.synchronizedList(mutableListOf())
+
     private var nextMutationDeferred: CompletableDeferred<Unit>? = null
 
     fun emit(items: List<InventoryItem>) {
@@ -125,5 +128,14 @@ class FakeInventoryRepository : InventoryRepository {
         } else {
             FindItemByBarcodeResult.NotFound
         }
+    }
+
+    override suspend fun setPresence(
+        stockItemId: StockItemId,
+        isPresent: Boolean,
+    ): QuantityMutationResult {
+        nextMutationDeferred?.await()
+        setPresenceCalls.add(stockItemId to isPresent)
+        return mutationResult ?: QuantityMutationResult.Failure(DomainError.StorageFailure)
     }
 }

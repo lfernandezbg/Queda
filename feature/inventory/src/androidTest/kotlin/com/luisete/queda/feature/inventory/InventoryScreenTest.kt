@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -41,6 +42,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag(InventoryTestTags.INVENTORY_LOADING).assertIsDisplayed()
@@ -62,6 +64,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag(InventoryTestTags.INVENTORY_EMPTY_STATE).assertIsDisplayed()
@@ -72,7 +75,7 @@ class InventoryScreenTest {
 
     @Test
     fun contentShowsNameAndFormattedQuantityWithStableTags() {
-        val item = InventoryItemUiModel("1", "Milk", "1", ExactQuantity.of("1", MeasurementUnit.LITER))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("1", MeasurementUnit.LITER))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item)),
@@ -86,6 +89,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag("${InventoryTestTags.INVENTORY_ITEM_ROW}_1").assertIsDisplayed()
@@ -98,7 +102,7 @@ class InventoryScreenTest {
     @Test
     fun tappingRow_opensActionSheet() {
         var clickedItem: InventoryItemUiModel? = null
-        val item = InventoryItemUiModel("1", "Milk", "1", ExactQuantity.of("1", MeasurementUnit.LITER))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("1", MeasurementUnit.LITER))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item)),
@@ -112,6 +116,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag("${InventoryTestTags.INVENTORY_ITEM_ROW}_1").performClick()
@@ -120,7 +125,7 @@ class InventoryScreenTest {
 
     @Test
     fun actionSheet_showsProductAndQuantity() {
-        val item = InventoryItemUiModel("1", "Milk", "10", ExactQuantity.of("10", MeasurementUnit.UNIT))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("10", MeasurementUnit.UNIT))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState =
@@ -138,6 +143,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         // Use specification to avoid ambiguity with the list row behind the sheet
@@ -152,7 +158,7 @@ class InventoryScreenTest {
     @Test
     fun selectingConsume_opensForm() {
         var consumeSelected = false
-        val item = InventoryItemUiModel("1", "Milk", "10", ExactQuantity.of("10", MeasurementUnit.UNIT))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("10", MeasurementUnit.UNIT))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState =
@@ -170,6 +176,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag(InventoryTestTags.QUANTITY_ACTION_CONSUME).performClick()
@@ -178,7 +185,7 @@ class InventoryScreenTest {
 
     @Test
     fun consumeForm_showsPreviewAndUpdates() {
-        val item = InventoryItemUiModel("1", "Milk", "10", ExactQuantity.of("10", MeasurementUnit.UNIT))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("10", MeasurementUnit.UNIT))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState =
@@ -202,6 +209,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithText("Consumir alimento").assertIsDisplayed()
@@ -211,7 +219,7 @@ class InventoryScreenTest {
 
     @Test
     fun validation_accessible() {
-        val item = InventoryItemUiModel("1", "Milk", "10", ExactQuantity.of("10", MeasurementUnit.UNIT))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("10", MeasurementUnit.UNIT))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState =
@@ -235,6 +243,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithText("La cantidad a consumir debe ser menor que la actual.").assertIsDisplayed()
@@ -242,7 +251,7 @@ class InventoryScreenTest {
 
     @Test
     fun submitting_disablesActions() {
-        val item = InventoryItemUiModel("1", "Milk", "10", ExactQuantity.of("10", MeasurementUnit.UNIT))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("10", MeasurementUnit.UNIT))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState =
@@ -265,6 +274,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag(InventoryTestTags.QUANTITY_ACTION_CONFIRM).assertIsNotEnabled()
@@ -274,7 +284,7 @@ class InventoryScreenTest {
 
     @Test
     fun itemRow_semantics_exposeAction() {
-        val item = InventoryItemUiModel("1", "Milk", "1", ExactQuantity.of("1", MeasurementUnit.LITER))
+        val item = InventoryItemUiModel("1", "Milk", ExactQuantity.of("1", MeasurementUnit.LITER))
         composeTestRule.setContent {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item)),
@@ -288,6 +298,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag("${InventoryTestTags.INVENTORY_ITEM_ROW}_1").assert(hasClickAction())
@@ -295,7 +306,7 @@ class InventoryScreenTest {
 
     @Test
     fun summaryHeader_showsSingular() {
-        val item1 = InventoryItemUiModel("1", "Milk", "1", ExactQuantity.of("1", MeasurementUnit.LITER))
+        val item1 = InventoryItemUiModel("1", "Milk", ExactQuantity.of("1", MeasurementUnit.LITER))
 
         composeTestRule.setContent {
             InventoryScreen(
@@ -310,6 +321,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithText("1 alimento").assertIsDisplayed()
@@ -319,11 +331,11 @@ class InventoryScreenTest {
     fun allFiveUnitsUseExpectedVisibleFormat() {
         val items =
             listOf(
-                InventoryItemUiModel("1", "A", "6", ExactQuantity.of("6", MeasurementUnit.UNIT)),
-                InventoryItemUiModel("2", "B", "500", ExactQuantity.of("500", MeasurementUnit.GRAM)),
-                InventoryItemUiModel("3", "C", "1,5", ExactQuantity.of("1.5", MeasurementUnit.KILOGRAM)),
-                InventoryItemUiModel("4", "D", "750", ExactQuantity.of("750", MeasurementUnit.MILLILITER)),
-                InventoryItemUiModel("5", "E", "1,25", ExactQuantity.of("1.25", MeasurementUnit.LITER)),
+                InventoryItemUiModel("1", "A", ExactQuantity.of("6", MeasurementUnit.UNIT)),
+                InventoryItemUiModel("2", "B", ExactQuantity.of("500", MeasurementUnit.GRAM)),
+                InventoryItemUiModel("3", "C", ExactQuantity.of("1.5", MeasurementUnit.KILOGRAM)),
+                InventoryItemUiModel("4", "D", ExactQuantity.of("750", MeasurementUnit.MILLILITER)),
+                InventoryItemUiModel("5", "E", ExactQuantity.of("1.25", MeasurementUnit.LITER)),
             )
         composeTestRule.setContent {
             InventoryScreen(
@@ -338,6 +350,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithText("6 ud").assertIsDisplayed()
@@ -362,6 +375,7 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         // Should find at least one (Top bar or empty state)
@@ -384,9 +398,70 @@ class InventoryScreenTest {
                 onAmountChange = {},
                 onUnitChange = {},
                 onConfirm = {},
+                onTogglePresence = {},
             )
         }
         composeTestRule.onNodeWithTag(InventoryTestTags.INVENTORY_ADD_BUTTON).performClick()
         assertEquals(1, count)
+    }
+
+    @Test
+    fun presenceRow_showsHayOrNoHay() {
+        val items =
+            listOf(
+                InventoryItemUiModel("1", "Salt", PresenceQuantity(true)),
+                InventoryItemUiModel("2", "Sugar", PresenceQuantity(false)),
+            )
+        composeTestRule.setContent {
+            InventoryScreen(
+                uiState = InventoryUiState.Content(items),
+                onAddItem = {},
+                onScanBarcode = {},
+                onRetry = {},
+                onItemClick = {},
+                onDismissSheet = {},
+                onSelectConsume = {},
+                onSelectCorrect = {},
+                onAmountChange = {},
+                onUnitChange = {},
+                onConfirm = {},
+                onTogglePresence = {},
+            )
+        }
+        composeTestRule.onNodeWithText("Salt").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Hay").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sugar").assertIsDisplayed()
+        composeTestRule.onNodeWithText("No hay").assertIsDisplayed()
+    }
+
+    @Test
+    fun presenceActionSheet_showsStateAndSwitch() {
+        val item = InventoryItemUiModel("1", "Salt", PresenceQuantity(true))
+        composeTestRule.setContent {
+            InventoryScreen(
+                uiState =
+                    InventoryUiState.Content(
+                        items = listOf(item),
+                        presenceAction = PresenceActionUiState.Managing(item, isPresent = true),
+                    ),
+                onAddItem = {},
+                onScanBarcode = {},
+                onRetry = {},
+                onItemClick = {},
+                onDismissSheet = {},
+                onSelectConsume = {},
+                onSelectCorrect = {},
+                onAmountChange = {},
+                onUnitChange = {},
+                onConfirm = {},
+                onTogglePresence = {},
+            )
+        }
+        composeTestRule.onNodeWithTag(InventoryTestTags.PRESENCE_ACTION_SHEET).assertIsDisplayed()
+        composeTestRule.onNode(
+            hasText("Salt") and hasAnyAncestor(hasTestTag(InventoryTestTags.PRESENCE_ACTION_SHEET)),
+        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Estado actual: Hay").assertIsDisplayed()
+        composeTestRule.onNodeWithTag(InventoryTestTags.PRESENCE_STATUS_SWITCH).assertIsDisplayed()
     }
 }

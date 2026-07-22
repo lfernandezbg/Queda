@@ -6,10 +6,12 @@ import com.luisete.queda.core.model.id.ProductId
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.inventory.InventoryItem
 import com.luisete.queda.core.model.inventory.StockItem
+import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.product.Product
 import com.luisete.queda.core.model.product.ProductName
 import com.luisete.queda.core.model.product.ProductNameCreationResult
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import javax.inject.Inject
 
 class AddExactInventoryItemUseCase
@@ -18,29 +20,37 @@ class AddExactInventoryItemUseCase
         private val repository: InventoryRepository,
         private val householdProvider: CurrentHouseholdIdProvider,
     ) {
-        @Suppress("ReturnCount")
+        @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod")
         suspend operator fun invoke(
             rawName: String,
             rawQuantity: String,
             unit: MeasurementUnit,
             rawBarcode: String? = null,
+            trackingMode: StockTrackingMode = StockTrackingMode.EXACT,
         ): AddExactInventoryItemResult {
             val nameResult = ProductName.create(rawName)
-            val quantityResult = ExactQuantityInputParser.parse(rawQuantity, unit)
+            val quantityResult =
+                if (trackingMode == StockTrackingMode.EXACT) {
+                    ExactQuantityInputParser.parse(rawQuantity, unit)
+                } else {
+                    null
+                }
 
             val barcodeResult =
                 rawBarcode?.let {
                     Barcode.create(it)
                 }
 
-            val isInvalid =
-                nameResult !is ProductNameCreationResult.Success ||
-                    quantityResult !is ExactQuantityInputResult.Success ||
-                    barcodeResult is BarcodeCreationResult.InvalidCheckDigit ||
+            val isNameInvalid = nameResult !is ProductNameCreationResult.Success
+            val isQuantityInvalid =
+                trackingMode == StockTrackingMode.EXACT &&
+                    quantityResult !is ExactQuantityInputResult.Success
+            val isBarcodeInvalid =
+                barcodeResult is BarcodeCreationResult.InvalidCheckDigit ||
                     barcodeResult is BarcodeCreationResult.UnsupportedFormat ||
                     barcodeResult is BarcodeCreationResult.NonDigit
 
-            if (isInvalid) {
+            if (isNameInvalid || isQuantityInvalid || isBarcodeInvalid) {
                 return AddExactInventoryItemResult.InvalidInput(
                     nameReason =
                         if (nameResult is ProductNameCreationResult.Success) {
@@ -49,7 +59,7 @@ class AddExactInventoryItemUseCase
                             nameResult.toError()
                         },
                     quantityReason =
-                        if (quantityResult is ExactQuantityInputResult.Success) {
+                        if (quantityResult == null || quantityResult is ExactQuantityInputResult.Success) {
                             null
                         } else {
                             quantityResult.toError()
@@ -70,12 +80,20 @@ class AddExactInventoryItemUseCase
                     name = nameResult.productName,
                     barcode = barcode,
                 )
+
+            val quantity =
+                if (trackingMode == StockTrackingMode.EXACT) {
+                    (quantityResult as ExactQuantityInputResult.Success).quantity
+                } else {
+                    PresenceQuantity(isPresent = true)
+                }
+
             val stockItem =
                 StockItem(
                     id = stockItemId,
                     householdId = householdId,
                     productId = productId,
-                    quantity = quantityResult.quantity,
+                    quantity = quantity,
                 )
             val inventoryItem = InventoryItem(product, stockItem)
 

@@ -10,9 +10,12 @@ import com.luisete.queda.core.domain.inventory.GetConsumePreviewUseCase
 import com.luisete.queda.core.domain.inventory.GetCorrectPreviewUseCase
 import com.luisete.queda.core.domain.inventory.ObserveExactInventoryItemsUseCase
 import com.luisete.queda.core.domain.inventory.QuantityMutationResult
+import com.luisete.queda.core.domain.inventory.SetPresenceUseCase
 import com.luisete.queda.core.domain.result.DomainError
 import com.luisete.queda.core.model.id.StockItemId
+import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,9 +46,11 @@ class InventoryViewModel
         private val correctExactQuantityUseCase: CorrectExactQuantityUseCase,
         private val getConsumePreviewUseCase: GetConsumePreviewUseCase,
         private val getCorrectPreviewUseCase: GetCorrectPreviewUseCase,
+        private val setPresenceUseCase: SetPresenceUseCase,
     ) : ViewModel() {
         private val refreshTrigger = MutableStateFlow(0)
         private val quantityActionState = MutableStateFlow<QuantityActionUiState>(QuantityActionUiState.Closed)
+        private val presenceActionState = MutableStateFlow<PresenceActionUiState>(PresenceActionUiState.Closed)
 
         val uiState: StateFlow<InventoryUiState> =
             combine(
@@ -65,9 +70,13 @@ class InventoryViewModel
                         }
                 },
                 quantityActionState,
-            ) { baseState, actionState ->
+                presenceActionState,
+            ) { baseState, qActionState, pActionState ->
                 if (baseState is InventoryUiState.Content) {
-                    baseState.copy(quantityAction = actionState)
+                    baseState.copy(
+                        quantityAction = qActionState,
+                        presenceAction = pActionState,
+                    )
                 } else {
                     baseState
                 }
@@ -82,7 +91,15 @@ class InventoryViewModel
         }
 
         fun onItemClick(item: InventoryItemUiModel) {
-            quantityActionState.value = QuantityActionUiState.ActionSelection(item)
+            if (item.quantity is PresenceQuantity) {
+                presenceActionState.value =
+                    PresenceActionUiState.Managing(
+                        item = item,
+                        isPresent = item.quantity.isPresent,
+                    )
+            } else {
+                quantityActionState.value = QuantityActionUiState.ActionSelection(item)
+            }
         }
 
         fun selectItemById(itemId: String) {
@@ -94,7 +111,7 @@ class InventoryViewModel
                     }
                     .first()
                     .let { item ->
-                        quantityActionState.value = QuantityActionUiState.ActionSelection(item)
+                        onItemClick(item)
                     }
             }
         }
@@ -102,23 +119,26 @@ class InventoryViewModel
         fun onDismissSheet() {
             if (isSubmitting()) return
             quantityActionState.value = QuantityActionUiState.Closed
+            presenceActionState.value = PresenceActionUiState.Closed
         }
 
         fun onSelectConsume() {
             val current = quantityActionState.value as? QuantityActionUiState.ActionSelection ?: return
+            val quantity = current.item.quantity as? ExactQuantity ?: return
             quantityActionState.value =
                 QuantityActionUiState.ConsumeEditing(
                     item = current.item,
-                    selectedUnit = current.item.quantity.unit,
+                    selectedUnit = quantity.unit,
                 )
         }
 
         fun onSelectCorrect() {
             val current = quantityActionState.value as? QuantityActionUiState.ActionSelection ?: return
+            val quantity = current.item.quantity as? ExactQuantity ?: return
             quantityActionState.value =
                 QuantityActionUiState.CorrectEditing(
                     item = current.item,
-                    selectedUnit = current.item.quantity.unit,
+                    selectedUnit = quantity.unit,
                 )
         }
 
@@ -159,11 +179,45 @@ class InventoryViewModel
         }
 
         fun onConfirm() {
-            val current = quantityActionState.value
-            if (current is QuantityActionUiState.ConsumeEditing) {
-                confirmConsume(current)
-            } else if (current is QuantityActionUiState.CorrectEditing) {
-                confirmCorrect(current)
+            val currentQ = quantityActionState.value
+            if (currentQ is QuantityActionUiState.ConsumeEditing) {
+                confirmConsume(currentQ)
+            } else if (currentQ is QuantityActionUiState.CorrectEditing) {
+                confirmCorrect(currentQ)
+            }
+        }
+
+        fun onTogglePresence(isPresent: Boolean) {
+            val current = presenceActionState.value as? PresenceActionUiState.Managing ?: return
+            if (current.isSubmitting) return
+
+            presenceActionState.value =
+                current.copy(
+                    isPresent = isPresent,
+                    isSubmitting = true,
+                    error = false,
+                )
+
+            viewModelScope.launch {
+                val result =
+                    setPresenceUseCase(
+                        stockItemId = StockItemId.from(current.item.id),
+                        isPresent = isPresent,
+                    )
+                when (result) {
+                    is QuantityMutationResult.Success -> {
+                        presenceActionState.value = PresenceActionUiState.Closed
+                    }
+
+                    is QuantityMutationResult.Failure -> {
+                        presenceActionState.value =
+                            current.copy(
+                                isPresent = !isPresent,
+                                isSubmitting = false,
+                                error = true,
+                            )
+                    }
+                }
             }
         }
 
@@ -223,8 +277,10 @@ class InventoryViewModel
                             -> QuantityActionError.INVALID_AMOUNT
                             DomainError.UnchangedQuantity -> QuantityActionError.UNCHANGED
                             DomainError.ProductNotFound -> QuantityActionError.PRODUCT_NOT_FOUND
-                            DomainError.StorageFailure -> QuantityActionError.STORAGE_FAILURE
-                            DomainError.ApproximateLevelDidNotDecrease -> QuantityActionError.STORAGE_FAILURE
+                            DomainError.StorageFailure,
+                            DomainError.ApproximateLevelDidNotDecrease,
+                            DomainError.IncompatibleMode,
+                            -> QuantityActionError.STORAGE_FAILURE
                         }
                     quantityActionState.update { current ->
                         when (current) {
@@ -247,13 +303,16 @@ class InventoryViewModel
                 else -> QuantityActionError.INVALID_AMOUNT
             }
 
+        @Suppress("ReturnCount")
         private fun calculateConsumePreview(state: QuantityActionUiState.ConsumeEditing): QuantityPreviewUiModel? {
             val parseResult = ExactQuantityInputParser.parse(state.amountInput, state.selectedUnit)
             if (parseResult !is ExactQuantityInputResult.Success) return null
 
+            val quantity = state.item.quantity as? ExactQuantity ?: return null
+
             val result =
                 getConsumePreviewUseCase(
-                    available = state.item.quantity,
+                    available = quantity,
                     toConsume = parseResult.quantity,
                 )
 
@@ -267,13 +326,16 @@ class InventoryViewModel
             }
         }
 
+        @Suppress("ReturnCount")
         private fun calculateCorrectPreview(state: QuantityActionUiState.CorrectEditing): QuantityPreviewUiModel? {
             val parseResult = ExactQuantityInputParser.parse(state.amountInput, state.selectedUnit)
             if (parseResult !is ExactQuantityInputResult.Success) return null
 
+            val quantity = state.item.quantity as? ExactQuantity ?: return null
+
             val result =
                 getCorrectPreviewUseCase(
-                    current = state.item.quantity,
+                    current = quantity,
                     newQuantity = parseResult.quantity,
                 )
 
@@ -288,9 +350,11 @@ class InventoryViewModel
         }
 
         private fun isSubmitting(): Boolean {
-            val current = quantityActionState.value
-            return (current as? QuantityActionUiState.ConsumeEditing)?.isSubmitting == true ||
-                (current as? QuantityActionUiState.CorrectEditing)?.isSubmitting == true
+            val currentQ = quantityActionState.value
+            val currentP = presenceActionState.value
+            return (currentQ as? QuantityActionUiState.ConsumeEditing)?.isSubmitting == true ||
+                (currentQ as? QuantityActionUiState.CorrectEditing)?.isSubmitting == true ||
+                (currentP as? PresenceActionUiState.Managing)?.isSubmitting == true
         }
 
         companion object {

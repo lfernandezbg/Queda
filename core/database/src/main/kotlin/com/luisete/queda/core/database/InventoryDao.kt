@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions")
 interface InventoryDao {
     @Transaction
     @Query(
@@ -21,8 +22,10 @@ interface InventoryDao {
             s.id AS stockItemId,
             s.householdId AS stockHouseholdId,
             s.productId AS stockProductId,
+            s.trackingMode AS trackingMode,
             s.quantityAmount AS quantityAmount,
-            s.quantityUnit AS quantityUnit
+            s.quantityUnit AS quantityUnit,
+            s.isPresent AS isPresent
         FROM products AS p
         INNER JOIN stock_items AS s
             ON s.productId = p.id
@@ -58,8 +61,10 @@ interface InventoryDao {
             s.id AS stockItemId,
             s.householdId AS stockHouseholdId,
             s.productId AS stockProductId,
+            s.trackingMode AS trackingMode,
             s.quantityAmount AS quantityAmount,
-            s.quantityUnit AS quantityUnit
+            s.quantityUnit AS quantityUnit,
+            s.isPresent AS isPresent
         FROM products AS p
         INNER JOIN stock_items AS s
             ON s.productId = p.id
@@ -86,9 +91,15 @@ interface InventoryDao {
         unit: String,
     )
 
+    @Query("UPDATE stock_items SET isPresent = :isPresent WHERE id = :id")
+    suspend fun updateStockItemPresence(
+        id: String,
+        isPresent: Boolean,
+    )
+
     @Suppress("ReturnCount")
     @Transaction
-    suspend fun addExactInventoryItem(
+    suspend fun addInventoryItem(
         product: ProductEntity,
         stockItem: StockItemEntity,
     ): AddExactInventoryItemDbResult {
@@ -118,4 +129,11 @@ interface InventoryDao {
         insertStockItem(stockItem)
         return AddExactInventoryItemDbResult.Added
     }
+
+    @Suppress("ReturnCount")
+    @Transaction
+    suspend fun addExactInventoryItem(
+        product: ProductEntity,
+        stockItem: StockItemEntity,
+    ): AddExactInventoryItemDbResult = addInventoryItem(product, stockItem)
 }

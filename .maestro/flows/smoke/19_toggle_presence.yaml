@@ -1,0 +1,29 @@
+appId: com.luisete.queda.e2e
+---
+- runFlow: 18_add_presence_item.yaml
+- tapOn: "Salt"
+- extendedWaitUntil:
+    visible:
+      id: "presence_action_sheet"
+- tapOn:
+    id: "presence_status_switch"
+- extendedWaitUntil:
+    notVisible:
+      id: "presence_action_sheet"
+- extendedWaitUntil:
+    visible: "No hay"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "No hay"
+- tapOn: "Salt"
+- extendedWaitUntil:
+    visible:
+      id: "presence_action_sheet"
+- tapOn:
+    id: "presence_status_switch"
+- extendedWaitUntil:
+    notVisible:
+      id: "presence_action_sheet"
+- extendedWaitUntil:
+    visible: "Hay"

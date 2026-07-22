@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasProgressBarRangeInfo
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.isNotSelected
 import androidx.compose.ui.test.isSelected
@@ -19,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -37,6 +39,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -44,6 +47,8 @@ class AddExactItemScreenTest {
         composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_NAME_INPUT).assertIsDisplayed()
         composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_QUANTITY_INPUT).assertIsDisplayed()
         composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_UNIT_SELECTOR).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_ITEM_MODE_EXACT).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_ITEM_MODE_PRESENCE).assertIsDisplayed()
         composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_SAVE_BUTTON).assertIsDisplayed()
         composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_CANCEL_BUTTON).assertIsDisplayed()
     }
@@ -56,6 +61,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -74,6 +80,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -90,6 +97,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -117,6 +125,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = { selectedUnit = it },
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -138,6 +147,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -155,6 +165,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -176,6 +187,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -191,6 +203,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -209,6 +222,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -227,6 +241,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -245,6 +260,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = {},
                 onCancel = {},
             )
@@ -263,6 +279,7 @@ class AddExactItemScreenTest {
                 onNameChange = {},
                 onQuantityChange = {},
                 onUnitChange = {},
+                onTrackingModeChange = {},
                 onSave = { saveCount++ },
                 onCancel = { cancelCount++ },
             )
@@ -272,5 +289,71 @@ class AddExactItemScreenTest {
 
         assertEquals(2, cancelCount)
         assertEquals(0, saveCount)
+    }
+
+    @Test
+    fun selectingPresenceMode_hidesQuantityAndUnit() {
+        composeTestRule.setContent {
+            AddExactItemScreen(
+                uiState = AddExactItemUiState(trackingMode = StockTrackingMode.PRESENCE),
+                onNameChange = {},
+                onQuantityChange = {},
+                onUnitChange = {},
+                onTrackingModeChange = {},
+                onSave = {},
+                onCancel = {},
+            )
+        }
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_NAME_INPUT).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_QUANTITY_INPUT).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_UNIT_SELECTOR).assertDoesNotExist()
+    }
+
+    @Test
+    fun switchingBetweenModes_invokesCallback() {
+        var selectedMode: StockTrackingMode? = null
+        composeTestRule.setContent {
+            AddExactItemScreen(
+                uiState = AddExactItemUiState(trackingMode = StockTrackingMode.EXACT),
+                onNameChange = {},
+                onQuantityChange = {},
+                onUnitChange = {},
+                onTrackingModeChange = { selectedMode = it },
+                onSave = {},
+                onCancel = {},
+            )
+        }
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_ITEM_MODE_PRESENCE).performClick()
+        assertEquals(StockTrackingMode.PRESENCE, selectedMode)
+
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_ITEM_MODE_EXACT).performClick()
+        assertEquals(StockTrackingMode.EXACT, selectedMode)
+    }
+
+    @Test
+    fun barcodeIndicatorIsVisibleAndCorrectlyPlaced() {
+        val barcode = "4006381333931"
+        composeTestRule.setContent {
+            AddExactItemScreen(
+                uiState = AddExactItemUiState(barcode = barcode),
+                onNameChange = {},
+                onQuantityChange = {},
+                onUnitChange = {},
+                onTrackingModeChange = {},
+                onSave = {},
+                onCancel = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_BARCODE_INDICATOR)
+            .assertIsDisplayed()
+            .assert(hasText("Código de barras asociado: $barcode"))
+
+        val nameField = composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_NAME_INPUT).getUnclippedBoundsInRoot().bottom
+        val indicator = composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_BARCODE_INDICATOR).getUnclippedBoundsInRoot().top
+        val modeSelector = composeTestRule.onNodeWithTag(InventoryTestTags.ADD_ITEM_MODE_EXACT).getUnclippedBoundsInRoot().top
+
+        assertTrue("Indicator should be below NameField", indicator > nameField)
+        assertTrue("ModeSelector should be below Indicator", modeSelector > indicator)
     }
 }

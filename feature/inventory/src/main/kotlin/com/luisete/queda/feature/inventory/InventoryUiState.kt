@@ -3,6 +3,7 @@ package com.luisete.queda.feature.inventory
 import com.luisete.queda.core.model.inventory.InventoryItem
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.StockQuantity
 
 sealed interface InventoryUiState {
     data object Loading : InventoryUiState
@@ -12,9 +13,21 @@ sealed interface InventoryUiState {
     data class Content(
         val items: List<InventoryItemUiModel>,
         val quantityAction: QuantityActionUiState = QuantityActionUiState.Closed,
+        val presenceAction: PresenceActionUiState = PresenceActionUiState.Closed,
     ) : InventoryUiState
 
     data object Error : InventoryUiState
+}
+
+sealed interface PresenceActionUiState {
+    data object Closed : PresenceActionUiState
+
+    data class Managing(
+        val item: InventoryItemUiModel,
+        val isPresent: Boolean,
+        val isSubmitting: Boolean = false,
+        val error: Boolean = false,
+    ) : PresenceActionUiState
 }
 
 sealed interface QuantityActionUiState {
@@ -61,16 +74,17 @@ enum class QuantityActionError {
 data class InventoryItemUiModel(
     val id: String,
     val name: String,
-    val amountFormatted: String,
-    val quantity: ExactQuantity,
+    val quantity: StockQuantity,
     val barcode: String? = null,
-)
+) {
+    val amountFormatted: String
+        get() = if (quantity is ExactQuantity) ExactQuantityUiFormatter.format(quantity) else ""
+}
 
 fun InventoryItem.toUiModel(): InventoryItemUiModel =
     InventoryItemUiModel(
         id = stockItem.id.value,
         name = product.name.displayValue,
-        amountFormatted = ExactQuantityUiFormatter.format(stockItem.quantity),
         quantity = stockItem.quantity,
         barcode = product.barcode?.value,
     )
