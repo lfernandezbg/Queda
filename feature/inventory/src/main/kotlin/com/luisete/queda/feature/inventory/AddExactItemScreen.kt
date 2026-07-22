@@ -1,10 +1,15 @@
-@file:Suppress("ktlint:standard:function-naming")
+@file:Suppress(
+    "ktlint:standard:function-naming",
+    "detekt:FunctionNaming",
+    "detekt:TooManyFunctions",
+)
 
 package com.luisete.queda.feature.inventory
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -104,51 +109,87 @@ fun AddExactItemScreen(
         focusRequester.requestFocus()
     }
 
-    BackHandler(enabled = uiState.isSaving) {
-        // Block
-    }
+    BackHandler(enabled = uiState.isSaving) { /* Block */ }
 
     QuedaScaffold(
         modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_SCREEN),
         topBar = {
-            QuedaTopAppBar(
-                title = stringResource(R.string.add_exact_item_title),
-                navigationIcon = {
-                    QuedaIconButton(
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        onClick = onCancel,
-                        modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_BACK_BUTTON),
-                        enabled = !uiState.isSaving,
-                    )
-                },
-            )
+            AddExactItemTopBar(isSaving = uiState.isSaving, onCancel = onCancel)
         },
         bottomBar = {
-            AddExactItemBottomBar(
-                isSaving = uiState.isSaving,
-                onSave = onSave,
-                onCancel = onCancel,
-            )
+            AddExactItemBottomBar(isSaving = uiState.isSaving, onSave = onSave, onCancel = onCancel)
         },
     ) { padding ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .imePadding()
-                    .padding(QuedaSpacing.Medium),
-        ) {
-            AddExactItemForm(
-                uiState = uiState,
-                focusRequester = focusRequester,
-                onNameChange = onNameChange,
-                onQuantityChange = onQuantityChange,
-                onUnitChange = onUnitChange,
-                onNext = { focusManager.moveFocus(FocusDirection.Down) },
-                onDone = { focusManager.clearFocus() },
+        AddExactItemContent(
+            uiState = uiState,
+            padding = padding,
+            focusRequester = focusRequester,
+            onNameChange = onNameChange,
+            onQuantityChange = onQuantityChange,
+            onUnitChange = onUnitChange,
+            onNext = { focusManager.moveFocus(FocusDirection.Down) },
+            onDone = { focusManager.clearFocus() },
+        )
+    }
+}
+
+@Composable
+private fun AddExactItemTopBar(
+    isSaving: Boolean,
+    onCancel: () -> Unit,
+) {
+    QuedaTopAppBar(
+        title = stringResource(R.string.add_exact_item_title),
+        navigationIcon = {
+            QuedaIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+                onClick = onCancel,
+                modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_BACK_BUTTON),
+                enabled = !isSaving,
+            )
+        },
+    )
+}
+
+@Composable
+@Suppress("LongParameterList")
+private fun AddExactItemContent(
+    uiState: AddExactItemUiState,
+    padding: PaddingValues,
+    focusRequester: FocusRequester,
+    onNameChange: (String) -> Unit,
+    onQuantityChange: (String) -> Unit,
+    onUnitChange: (MeasurementUnit) -> Unit,
+    onNext: () -> Unit,
+    onDone: () -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(QuedaSpacing.Medium),
+    ) {
+        AddExactItemForm(
+            uiState = uiState,
+            focusRequester = focusRequester,
+            onNameChange = onNameChange,
+            onQuantityChange = onQuantityChange,
+            onUnitChange = onUnitChange,
+            onNext = onNext,
+            onDone = onDone,
+        )
+
+        if (uiState.barcode != null) {
+            Spacer(modifier = Modifier.height(QuedaSpacing.Medium))
+            Text(
+                text = stringResource(R.string.add_exact_item_barcode_associated, uiState.barcode),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_BARCODE_INDICATOR),
             )
         }
     }
@@ -232,6 +273,18 @@ private fun AddExactItemForm(
         enabled = !uiState.isSaving,
     )
 
+    if (uiState.duplicateBarcodeError) {
+        Text(
+            text = stringResource(R.string.error_duplicate_barcode),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier =
+                Modifier
+                    .padding(top = QuedaSpacing.Small)
+                    .testTag(InventoryTestTags.ADD_EXACT_ITEM_DUPLICATE_BARCODE_ERROR),
+        )
+    }
+
     if (uiState.storageError) {
         Text(
             text = stringResource(R.string.error_storage_failure),
@@ -297,7 +350,8 @@ private fun QuantityField(
             QuantityInputError.BLANK -> stringResource(R.string.error_quantity_blank)
             QuantityInputError.INVALID_FORMAT -> stringResource(R.string.error_quantity_format)
             QuantityInputError.NOT_POSITIVE -> stringResource(R.string.error_quantity_not_positive)
-            QuantityInputError.TOO_MANY_DECIMALS -> stringResource(R.string.error_quantity_too_many_decimals)
+            QuantityInputError.TOO_MANY_DECIMALS ->
+                stringResource(R.string.error_quantity_too_many_decimals)
             null -> null
         }
 
@@ -405,8 +459,10 @@ private fun UnitSheetContent(
                 when (unit) {
                     MeasurementUnit.UNIT -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_UNIT
                     MeasurementUnit.GRAM -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_GRAM
-                    MeasurementUnit.KILOGRAM -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_KILOGRAM
-                    MeasurementUnit.MILLILITER -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_MILLILITER
+                    MeasurementUnit.KILOGRAM ->
+                        InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_KILOGRAM
+                    MeasurementUnit.MILLILITER ->
+                        InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_MILLILITER
                     MeasurementUnit.LITER -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_LITER
                 }
             Row(
@@ -428,7 +484,12 @@ private fun UnitSheetContent(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.weight(1f),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    color =
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
                 if (isSelected) {
                     Icon(
@@ -443,7 +504,11 @@ private fun UnitSheetContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true, name = "Add Exact Item", group = "Inventory")
+@androidx.compose.ui.tooling.preview.Preview(
+    showBackground = true,
+    name = "Add Exact Item",
+    group = "Inventory",
+)
 @Composable
 @Suppress("FunctionNaming")
 fun AddExactItemScreenPreview() {

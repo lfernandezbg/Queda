@@ -9,8 +9,11 @@ import com.luisete.queda.core.database.ProductEntity
 import com.luisete.queda.core.database.QuedaDatabase
 import com.luisete.queda.core.database.StockItemEntity
 import com.luisete.queda.core.domain.inventory.AddExactItemRepositoryResult
+import com.luisete.queda.core.domain.inventory.FindItemByBarcodeResult
 import com.luisete.queda.core.domain.inventory.QuantityMutationResult
 import com.luisete.queda.core.domain.result.DomainError
+import com.luisete.queda.core.model.barcode.Barcode
+import com.luisete.queda.core.model.barcode.BarcodeCreationResult
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
@@ -204,5 +207,48 @@ class OfflineInventoryRepositoryTest {
 
             val persisted = dao.getStockItemById(sid)
             assertEquals("10", persisted?.quantityAmount)
+        }
+
+    @Test
+    fun findByBarcodeReturnsItem() =
+        runTest {
+            val barcodeStr = "4006381333931"
+            val barcode = (Barcode.create(barcodeStr) as BarcodeCreationResult.Success).barcode
+            val product = InventoryTestData.createProduct(barcode = barcodeStr)
+            val stockItem = InventoryTestData.createStockItem(productId = product.id.value)
+            repository.addExactInventoryItem(product, stockItem)
+
+            val result = repository.findItemByBarcode(barcode)
+            assertTrue(result is FindItemByBarcodeResult.Found)
+            assertEquals(product.id, (result as FindItemByBarcodeResult.Found).item.product.id)
+        }
+
+    @Test
+    fun findByMissingBarcodeReturnsNotFound() =
+        runTest {
+            val barcode = (Barcode.create("73513537") as BarcodeCreationResult.Success).barcode
+            val result = repository.findItemByBarcode(barcode)
+            assertEquals(FindItemByBarcodeResult.NotFound, result)
+        }
+
+    @Test
+    fun duplicateBarcodeReturnsDuplicateBarcodeResult() =
+        runTest {
+            val barcode = "4006381333931"
+            val p1 = InventoryTestData.createProduct(id = "p1", name = "P1", barcode = barcode)
+            val s1 = InventoryTestData.createStockItem(id = "s1", productId = "p1")
+            repository.addExactInventoryItem(p1, s1)
+
+            val p2 = InventoryTestData.createProduct(id = "p2", name = "P2", barcode = barcode)
+            val s2 = InventoryTestData.createStockItem(id = "s2", productId = "p2")
+
+            val result = repository.addExactInventoryItem(p2, s2)
+            assertEquals(AddExactItemRepositoryResult.DuplicateBarcode, result)
+        }
+
+    private fun <T> Any.getOrThrow(): T =
+        when (this) {
+            is com.luisete.queda.core.model.barcode.BarcodeCreationResult.Success -> barcode as T
+            else -> throw IllegalArgumentException("Result is not success")
         }
 }

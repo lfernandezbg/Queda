@@ -63,6 +63,7 @@ data class InventoryItemUiModel(
     val name: String,
     val amountFormatted: String,
     val quantity: ExactQuantity,
+    val barcode: String? = null,
 )
 
 fun InventoryItem.toUiModel(): InventoryItemUiModel =
@@ -71,4 +72,5 @@ fun InventoryItem.toUiModel(): InventoryItemUiModel =
         name = product.name.displayValue,
         amountFormatted = ExactQuantityUiFormatter.format(stockItem.quantity),
         quantity = stockItem.quantity,
+        barcode = product.barcode?.value,
     )

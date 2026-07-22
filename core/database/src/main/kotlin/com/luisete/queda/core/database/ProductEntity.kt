@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
     tableName = "products",
     indices = [
         Index(value = ["householdId", "normalizedName"], unique = true),
+        Index(value = ["barcode"], unique = true),
     ],
 )
 data class ProductEntity(
@@ -15,4 +16,5 @@ data class ProductEntity(
     val householdId: String,
     val displayName: String,
     val normalizedName: String,
+    val barcode: String? = null,
 )

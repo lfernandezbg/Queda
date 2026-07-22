@@ -3,6 +3,8 @@ package com.luisete.queda.core.data.inventory
 import com.luisete.queda.core.database.InventoryItemProjection
 import com.luisete.queda.core.database.ProductEntity
 import com.luisete.queda.core.database.StockItemEntity
+import com.luisete.queda.core.model.barcode.Barcode
+import com.luisete.queda.core.model.barcode.BarcodeCreationResult
 import com.luisete.queda.core.model.id.HouseholdId
 import com.luisete.queda.core.model.id.ProductId
 import com.luisete.queda.core.model.id.StockItemId
@@ -21,6 +23,7 @@ fun Product.toEntity(): ProductEntity =
         householdId = householdId.value,
         displayName = name.displayValue,
         normalizedName = name.normalizedKey,
+        barcode = barcode?.value,
     )
 
 fun StockItem.toEntity(): StockItemEntity =
@@ -47,11 +50,20 @@ fun InventoryItemProjection.toDomain(): InventoryItem {
         error("Persisted normalized name mismatch: expected $productNormalizedName, got ${productName.normalizedKey}")
     }
 
+    val barcode =
+        productBarcode?.let {
+            when (val res = Barcode.create(it)) {
+                is BarcodeCreationResult.Success -> res.barcode
+                else -> error("Persisted barcode is invalid: $it")
+            }
+        }
+
     val productDomain =
         Product(
             id = ProductId.from(productId),
             householdId = HouseholdId.from(productHouseholdId),
             name = productName,
+            barcode = barcode,
         )
 
     val quantity =

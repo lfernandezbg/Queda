@@ -21,8 +21,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -80,6 +83,20 @@ class InventoryViewModel
 
         fun onItemClick(item: InventoryItemUiModel) {
             quantityActionState.value = QuantityActionUiState.ActionSelection(item)
+        }
+
+        fun selectItemById(itemId: String) {
+            viewModelScope.launch {
+                uiState
+                    .filterIsInstance<InventoryUiState.Content>()
+                    .mapNotNull { content ->
+                        content.items.find { it.id == itemId }
+                    }
+                    .first()
+                    .let { item ->
+                        quantityActionState.value = QuantityActionUiState.ActionSelection(item)
+                    }
+            }
         }
 
         fun onDismissSheet() {

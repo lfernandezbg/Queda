@@ -54,6 +54,32 @@ class FakeInventoryDao : InventoryDao {
         }
     }
 
+    override suspend fun getProductByBarcode(barcode: String): ProductEntity? {
+        return products.find { it.barcode == barcode }
+    }
+
+    override suspend fun getItemByBarcode(barcode: String): InventoryItemProjection? {
+        val product = products.find { it.barcode == barcode }
+        val stock = if (product != null) stocks.find { it.productId == product.id } else null
+
+        return if (product != null && stock != null) {
+            InventoryItemProjection(
+                productId = product.id,
+                productHouseholdId = product.householdId,
+                productDisplayName = product.displayName,
+                productNormalizedName = product.normalizedName,
+                productBarcode = product.barcode,
+                stockItemId = stock.id,
+                stockHouseholdId = stock.householdId,
+                stockProductId = stock.productId,
+                quantityAmount = stock.quantityAmount,
+                quantityUnit = stock.quantityUnit,
+            )
+        } else {
+            null
+        }
+    }
+
     override suspend fun addExactInventoryItem(
         product: ProductEntity,
         stockItem: StockItemEntity,

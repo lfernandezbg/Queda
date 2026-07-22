@@ -1,5 +1,6 @@
 package com.luisete.queda.core.domain.inventory
 
+import com.luisete.queda.core.model.barcode.Barcode
 import com.luisete.queda.core.model.id.HouseholdId
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.inventory.InventoryItem
@@ -25,4 +26,6 @@ interface InventoryRepository {
         stockItemId: StockItemId,
         newQuantity: ExactQuantity,
     ): QuantityMutationResult
+
+    suspend fun findItemByBarcode(barcode: Barcode): FindItemByBarcodeResult
 }

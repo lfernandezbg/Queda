@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -31,6 +32,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Loading,
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -51,6 +53,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Empty,
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -74,6 +77,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item)),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -99,6 +103,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item)),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = { clickedItem = it },
                 onDismissSheet = {},
@@ -124,6 +129,7 @@ class InventoryScreenTest {
                         quantityAction = QuantityActionUiState.ActionSelection(item),
                     ),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -155,6 +161,7 @@ class InventoryScreenTest {
                         quantityAction = QuantityActionUiState.ActionSelection(item),
                     ),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -186,6 +193,7 @@ class InventoryScreenTest {
                             ),
                     ),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -218,6 +226,7 @@ class InventoryScreenTest {
                             ),
                     ),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -247,6 +256,7 @@ class InventoryScreenTest {
                             ),
                     ),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -269,6 +279,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item)),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -290,6 +301,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Content(listOf(item1)),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -317,6 +329,7 @@ class InventoryScreenTest {
             InventoryScreen(
                 uiState = InventoryUiState.Content(items),
                 onAddItem = {},
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},
@@ -335,12 +348,34 @@ class InventoryScreenTest {
     }
 
     @Test
+    fun showsScanButtons() {
+        composeTestRule.setContent {
+            InventoryScreen(
+                uiState = InventoryUiState.Empty,
+                onAddItem = {},
+                onScanBarcode = {},
+                onRetry = {},
+                onItemClick = {},
+                onDismissSheet = {},
+                onSelectConsume = {},
+                onSelectCorrect = {},
+                onAmountChange = {},
+                onUnitChange = {},
+                onConfirm = {},
+            )
+        }
+        // Should find at least one (Top bar or empty state)
+        composeTestRule.onAllNodesWithTag(InventoryTestTags.INVENTORY_SCAN_BUTTON).onFirst().assertIsDisplayed()
+    }
+
+    @Test
     fun addButtonInvokesCallbackOnce() {
         var count = 0
         composeTestRule.setContent {
             InventoryScreen(
                 uiState = InventoryUiState.Empty,
                 onAddItem = { count++ },
+                onScanBarcode = {},
                 onRetry = {},
                 onItemClick = {},
                 onDismissSheet = {},

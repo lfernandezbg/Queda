@@ -17,6 +17,7 @@ interface InventoryDao {
             p.householdId AS productHouseholdId,
             p.displayName AS productDisplayName,
             p.normalizedName AS productNormalizedName,
+            p.barcode AS productBarcode,
             s.id AS stockItemId,
             s.householdId AS stockHouseholdId,
             s.productId AS stockProductId,
@@ -41,6 +42,33 @@ interface InventoryDao {
         householdId: String,
         normalizedName: String,
     ): Int
+
+    @Query("SELECT * FROM products WHERE barcode = :barcode")
+    suspend fun getProductByBarcode(barcode: String): ProductEntity?
+
+    @Transaction
+    @Query(
+        """
+        SELECT
+            p.id AS productId,
+            p.householdId AS productHouseholdId,
+            p.displayName AS productDisplayName,
+            p.normalizedName AS productNormalizedName,
+            p.barcode AS productBarcode,
+            s.id AS stockItemId,
+            s.householdId AS stockHouseholdId,
+            s.productId AS stockProductId,
+            s.quantityAmount AS quantityAmount,
+            s.quantityUnit AS quantityUnit
+        FROM products AS p
+        INNER JOIN stock_items AS s
+            ON s.productId = p.id
+            AND s.householdId = p.householdId
+        WHERE p.barcode = :barcode
+        LIMIT 1
+        """,
+    )
+    suspend fun getItemByBarcode(barcode: String): InventoryItemProjection?
 
     @Insert
     suspend fun insertProduct(product: ProductEntity)
@@ -71,11 +99,18 @@ interface InventoryDao {
             return AddExactInventoryItemDbResult.DuplicateProductName
         }
 
+        if (product.barcode != null && getProductByBarcode(product.barcode) != null) {
+            return AddExactInventoryItemDbResult.DuplicateBarcode
+        }
+
         try {
             insertProduct(product)
         } catch (e: SQLiteConstraintException) {
             if (countProductsWithName(product.householdId, product.normalizedName) > 0) {
                 return AddExactInventoryItemDbResult.DuplicateProductName
+            }
+            if (product.barcode != null && getProductByBarcode(product.barcode) != null) {
+                return AddExactInventoryItemDbResult.DuplicateBarcode
             }
             throw e
         }

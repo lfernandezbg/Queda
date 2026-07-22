@@ -755,4 +755,37 @@ class InventoryViewModelTest {
             advanceUntilIdle()
             job.cancel()
         }
+
+    @Test
+    fun selectItemByIdWaitsForContentAndOpensActionSelection() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            val job = launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            // Call selectItemById while state is still Loading
+            viewModel.selectItemById("s1")
+            advanceUntilIdle()
+
+            assertEquals(InventoryUiState.Loading, viewModel.uiState.value)
+
+            // Emit content
+            repository.emit(
+                listOf(
+                    InventoryTestData.createInventoryItem(
+                        name = "Milk",
+                        stockItemId = "s1",
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertTrue(state is InventoryUiState.Content)
+            val action = (state as InventoryUiState.Content).quantityAction
+            assertTrue(action is QuantityActionUiState.ActionSelection)
+            assertEquals("s1", (action as QuantityActionUiState.ActionSelection).item.id)
+
+            job.cancel()
+        }
 }

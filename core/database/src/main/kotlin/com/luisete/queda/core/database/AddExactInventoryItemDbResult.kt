@@ -4,4 +4,6 @@ sealed interface AddExactInventoryItemDbResult {
     data object Added : AddExactInventoryItemDbResult
 
     data object DuplicateProductName : AddExactInventoryItemDbResult
+
+    data object DuplicateBarcode : AddExactInventoryItemDbResult
 }

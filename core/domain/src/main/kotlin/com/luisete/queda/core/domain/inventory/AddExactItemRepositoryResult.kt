@@ -5,5 +5,7 @@ sealed interface AddExactItemRepositoryResult {
 
     data object DuplicateProductName : AddExactItemRepositoryResult
 
+    data object DuplicateBarcode : AddExactItemRepositoryResult
+
     data object StorageFailure : AddExactItemRepositoryResult
 }
