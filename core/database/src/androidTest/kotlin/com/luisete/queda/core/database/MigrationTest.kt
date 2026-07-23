@@ -90,4 +90,64 @@ class MigrationTest {
 
         db.close()
     }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate2To3() {
+        helper.createDatabase(testDb, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) " +
+                    "VALUES ('p1', 'h1', 'Milk', 'milk', '123')",
+            )
+            db.execSQL(
+                "INSERT INTO stock_items (id, householdId, productId, quantityAmount, quantityUnit) " +
+                    "VALUES ('s1', 'h1', 'p1', '10.5', 'LITER')",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(testDb, 3, true, QuedaDatabase.MIGRATION_2_3)
+
+        db.query("SELECT * FROM stock_items WHERE id = 's1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("p1", cursor.getString(cursor.getColumnIndexOrThrow("productId")))
+            assertEquals("EXACT", cursor.getString(cursor.getColumnIndexOrThrow("trackingMode")))
+            assertEquals("10.5", cursor.getString(cursor.getColumnIndexOrThrow("quantityAmount")))
+            assertEquals("LITER", cursor.getString(cursor.getColumnIndexOrThrow("quantityUnit")))
+            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("isPresent")))
+        }
+
+        db.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate1To2To3() {
+        helper.createDatabase(testDb, 1).use { db ->
+            db.execSQL(
+                "INSERT INTO products (id, householdId, displayName, normalizedName) " +
+                    "VALUES ('p1', 'h1', 'Milk', 'milk')",
+            )
+            db.execSQL(
+                "INSERT INTO stock_items (id, householdId, productId, quantityAmount, quantityUnit) " +
+                    "VALUES ('s1', 'h1', 'p1', '10.5', 'LITER')",
+            )
+        }
+
+        val db =
+            helper.runMigrationsAndValidate(
+                testDb,
+                3,
+                true,
+                QuedaDatabase.MIGRATION_1_2,
+                QuedaDatabase.MIGRATION_2_3,
+            )
+
+        db.query("SELECT * FROM stock_items WHERE id = 's1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("EXACT", cursor.getString(cursor.getColumnIndexOrThrow("trackingMode")))
+            assertEquals("10.5", cursor.getString(cursor.getColumnIndexOrThrow("quantityAmount")))
+        }
+
+        db.close()
+    }
 }

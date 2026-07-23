@@ -24,6 +24,8 @@ data class StockItemEntity(
     @PrimaryKey val id: String,
     val householdId: String,
     val productId: String,
-    val quantityAmount: String,
-    val quantityUnit: String,
+    val trackingMode: String,
+    val quantityAmount: String?,
+    val quantityUnit: String?,
+    val isPresent: Boolean?,
 )

@@ -54,6 +54,16 @@ class FakeInventoryDao : InventoryDao {
         }
     }
 
+    override suspend fun updateStockItemPresence(
+        id: String,
+        isPresent: Boolean,
+    ) {
+        val index = stocks.indexOfFirst { it.id == id }
+        if (index != -1) {
+            stocks[index] = stocks[index].copy(isPresent = isPresent)
+        }
+    }
+
     override suspend fun getProductByBarcode(barcode: String): ProductEntity? {
         return products.find { it.barcode == barcode }
     }
@@ -72,15 +82,18 @@ class FakeInventoryDao : InventoryDao {
                 stockItemId = stock.id,
                 stockHouseholdId = stock.householdId,
                 stockProductId = stock.productId,
+                trackingMode = stock.trackingMode,
                 quantityAmount = stock.quantityAmount,
                 quantityUnit = stock.quantityUnit,
+                isPresent = stock.isPresent,
             )
         } else {
             null
         }
     }
 
-    override suspend fun addExactInventoryItem(
+    @Suppress("ReturnCount")
+    override suspend fun addInventoryItem(
         product: ProductEntity,
         stockItem: StockItemEntity,
     ): AddExactInventoryItemDbResult {
@@ -88,8 +101,16 @@ class FakeInventoryDao : InventoryDao {
         if (countProductsWithName(product.householdId, product.normalizedName) > 0) {
             return AddExactInventoryItemDbResult.DuplicateProductName
         }
+        if (product.barcode != null && products.any { it.barcode == product.barcode }) {
+            return AddExactInventoryItemDbResult.DuplicateBarcode
+        }
         insertProduct(product)
         insertStockItem(stockItem)
         return AddExactInventoryItemDbResult.Added
     }
+
+    override suspend fun addExactInventoryItem(
+        product: ProductEntity,
+        stockItem: StockItemEntity,
+    ): AddExactInventoryItemDbResult = addInventoryItem(product, stockItem)
 }

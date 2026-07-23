@@ -6,9 +6,11 @@ import com.luisete.queda.core.domain.inventory.GetConsumePreviewUseCase
 import com.luisete.queda.core.domain.inventory.GetCorrectPreviewUseCase
 import com.luisete.queda.core.domain.inventory.ObserveExactInventoryItemsUseCase
 import com.luisete.queda.core.domain.inventory.QuantityMutationResult
+import com.luisete.queda.core.domain.inventory.SetPresenceUseCase
 import com.luisete.queda.core.domain.result.DomainError
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import com.luisete.queda.core.testing.FakeCurrentHouseholdIdProvider
 import com.luisete.queda.core.testing.FakeInventoryRepository
 import com.luisete.queda.core.testing.InventoryTestData
@@ -36,6 +38,7 @@ class InventoryViewModelTest {
     private lateinit var correctUseCase: CorrectExactQuantityUseCase
     private lateinit var getConsumePreviewUseCase: GetConsumePreviewUseCase
     private lateinit var getCorrectPreviewUseCase: GetCorrectPreviewUseCase
+    private lateinit var setPresenceUseCase: SetPresenceUseCase
     private val householdIdProvider = FakeCurrentHouseholdIdProvider()
     private val testDispatcher = StandardTestDispatcher()
 
@@ -48,6 +51,7 @@ class InventoryViewModelTest {
         correctUseCase = CorrectExactQuantityUseCase(repository)
         getConsumePreviewUseCase = GetConsumePreviewUseCase()
         getCorrectPreviewUseCase = GetCorrectPreviewUseCase()
+        setPresenceUseCase = SetPresenceUseCase(repository)
     }
 
     private fun createViewModel() =
@@ -57,6 +61,7 @@ class InventoryViewModelTest {
             correctExactQuantityUseCase = correctUseCase,
             getConsumePreviewUseCase = getConsumePreviewUseCase,
             getCorrectPreviewUseCase = getCorrectPreviewUseCase,
+            setPresenceUseCase = setPresenceUseCase,
         )
 
     @After
@@ -785,6 +790,130 @@ class InventoryViewModelTest {
             val action = (state as InventoryUiState.Content).quantityAction
             assertTrue(action is QuantityActionUiState.ActionSelection)
             assertEquals("s1", (action as QuantityActionUiState.ActionSelection).item.id)
+
+            job.cancel()
+        }
+
+    @Test
+    fun tappingPresenceItemOpensPresenceManagement() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            val job = launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+            repository.emit(
+                listOf(
+                    InventoryTestData.createInventoryItem(
+                        name = "Salt",
+                        stockItemId = "s1",
+                        quantity = PresenceQuantity(true),
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+            val item = (viewModel.uiState.value as InventoryUiState.Content).items[0]
+
+            viewModel.onItemClick(item)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as InventoryUiState.Content
+            assertTrue(state.presenceAction is PresenceActionUiState.Managing)
+            val action = state.presenceAction as PresenceActionUiState.Managing
+            assertEquals(true, action.isPresent)
+            job.cancel()
+        }
+
+    @Test
+    fun togglingPresencePersistsNewState() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            val job = launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+            repository.emit(
+                listOf(
+                    InventoryTestData.createInventoryItem(
+                        name = "Salt",
+                        stockItemId = "s1",
+                        quantity = PresenceQuantity(true),
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+            val item = (viewModel.uiState.value as InventoryUiState.Content).items[0]
+            viewModel.onItemClick(item)
+            advanceUntilIdle()
+
+            repository.setMutationResult(QuantityMutationResult.Success(PresenceQuantity(false)))
+            viewModel.onTogglePresence(false)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as InventoryUiState.Content
+            assertEquals(PresenceActionUiState.Closed, state.presenceAction)
+            assertEquals(1, repository.setPresenceCalls.size)
+            assertEquals("s1" to false, repository.setPresenceCalls[0].let { it.first.value to it.second })
+            job.cancel()
+        }
+
+    @Test
+    fun presenceFailureShowsError() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            val job = launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+            repository.emit(
+                listOf(
+                    InventoryTestData.createInventoryItem(
+                        name = "Salt",
+                        stockItemId = "s1",
+                        quantity = PresenceQuantity(true),
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+            val item = (viewModel.uiState.value as InventoryUiState.Content).items[0]
+            viewModel.onItemClick(item)
+            advanceUntilIdle()
+
+            repository.setMutationResult(QuantityMutationResult.Failure(DomainError.StorageFailure))
+            viewModel.onTogglePresence(false)
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value as InventoryUiState.Content
+            val action = state.presenceAction as PresenceActionUiState.Managing
+            assertTrue(action.error)
+            assertEquals(true, action.isPresent) // Reverted to actual state
+            job.cancel()
+        }
+
+    @Test
+    fun selectPresenceItemByIdWaitsForContentAndOpensPresenceManagement() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            val job = launch { viewModel.uiState.collect {} }
+            advanceUntilIdle()
+
+            viewModel.selectItemById("s1")
+            advanceUntilIdle()
+
+            repository.emit(
+                listOf(
+                    InventoryTestData.createInventoryItem(
+                        name = "Salt",
+                        stockItemId = "s1",
+                        quantity = PresenceQuantity(true),
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertTrue(state is InventoryUiState.Content)
+            val content = state as InventoryUiState.Content
+            assertTrue(content.presenceAction is PresenceActionUiState.Managing)
+            assertEquals(QuantityActionUiState.Closed, content.quantityAction)
+
+            val action = content.presenceAction as PresenceActionUiState.Managing
+            assertEquals("s1", action.item.id)
+            assertEquals(true, action.isPresent)
 
             job.cancel()
         }

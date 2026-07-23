@@ -26,6 +26,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,6 +62,7 @@ import com.luisete.queda.core.designsystem.theme.QuedaSpacing
 import com.luisete.queda.core.designsystem.theme.QuedaTheme
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 
 @Composable
 @Suppress("FunctionNaming")
@@ -82,6 +85,7 @@ fun InventoryRoute(
         onAmountChange = viewModel::onAmountChange,
         onUnitChange = viewModel::onUnitChange,
         onConfirm = viewModel::onConfirm,
+        onTogglePresence = viewModel::onTogglePresence,
     )
 }
 
@@ -100,6 +104,7 @@ fun InventoryScreen(
     onAmountChange: (String) -> Unit,
     onUnitChange: (MeasurementUnit) -> Unit,
     onConfirm: () -> Unit,
+    onTogglePresence: (Boolean) -> Unit,
 ) {
     QuedaScaffold(
         modifier =
@@ -165,16 +170,26 @@ fun InventoryScreen(
             onItemClick = onItemClick,
         )
 
-        if (uiState is InventoryUiState.Content && uiState.quantityAction !is QuantityActionUiState.Closed) {
-            QuantityActionSheet(
-                state = uiState.quantityAction,
-                onDismiss = onDismissSheet,
-                onSelectConsume = onSelectConsume,
-                onSelectCorrect = onSelectCorrect,
-                onAmountChange = onAmountChange,
-                onUnitChange = onUnitChange,
-                onConfirm = onConfirm,
-            )
+        if (uiState is InventoryUiState.Content) {
+            if (uiState.quantityAction !is QuantityActionUiState.Closed) {
+                QuantityActionSheet(
+                    state = uiState.quantityAction,
+                    onDismiss = onDismissSheet,
+                    onSelectConsume = onSelectConsume,
+                    onSelectCorrect = onSelectCorrect,
+                    onAmountChange = onAmountChange,
+                    onUnitChange = onUnitChange,
+                    onConfirm = onConfirm,
+                )
+            }
+
+            if (uiState.presenceAction !is PresenceActionUiState.Closed) {
+                PresenceActionSheet(
+                    state = uiState.presenceAction,
+                    onDismiss = onDismissSheet,
+                    onTogglePresence = onTogglePresence,
+                )
+            }
         }
     }
 }
@@ -308,25 +323,39 @@ private fun InventorySummaryHeader(itemsCount: Int) {
 }
 
 @Composable
-@Suppress("FunctionNaming")
+@Suppress("FunctionNaming", "LongMethod")
 fun InventoryItemRow(
     item: InventoryItemUiModel,
     onClick: () -> Unit,
 ) {
-    val unitAbbreviation =
-        when (item.quantity.unit) {
-            MeasurementUnit.UNIT -> stringResource(R.string.unit_abbreviation_unit)
-            MeasurementUnit.GRAM -> stringResource(R.string.unit_abbreviation_gram)
-            MeasurementUnit.KILOGRAM -> stringResource(R.string.unit_abbreviation_kilogram)
-            MeasurementUnit.MILLILITER -> stringResource(R.string.unit_abbreviation_milliliter)
-            MeasurementUnit.LITER -> stringResource(R.string.unit_abbreviation_liter)
+    val quantityText =
+        when (val q = item.quantity) {
+            is ExactQuantity -> {
+                val unitAbbreviation =
+                    when (q.unit) {
+                        MeasurementUnit.UNIT -> stringResource(R.string.unit_abbreviation_unit)
+                        MeasurementUnit.GRAM -> stringResource(R.string.unit_abbreviation_gram)
+                        MeasurementUnit.KILOGRAM -> stringResource(R.string.unit_abbreviation_kilogram)
+                        MeasurementUnit.MILLILITER -> stringResource(R.string.unit_abbreviation_milliliter)
+                        MeasurementUnit.LITER -> stringResource(R.string.unit_abbreviation_liter)
+                    }
+                stringResource(
+                    R.string.inventory_quantity_format,
+                    ExactQuantityUiFormatter.format(q),
+                    unitAbbreviation,
+                )
+            }
+
+            is PresenceQuantity -> {
+                if (q.isPresent) {
+                    stringResource(R.string.presence_status_present)
+                } else {
+                    stringResource(R.string.presence_status_absent)
+                }
+            }
+
+            else -> ""
         }
-    val quantityFormatted =
-        stringResource(
-            R.string.inventory_quantity_format,
-            item.amountFormatted,
-            unitAbbreviation,
-        )
 
     Row(
         modifier =
@@ -355,13 +384,100 @@ fun InventoryItemRow(
                     .testTag(InventoryTestTags.INVENTORY_ITEM_NAME),
         )
         Text(
-            text = quantityFormatted,
+            text = quantityText,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
+            color =
+                if (item.quantity is PresenceQuantity && !(item.quantity as PresenceQuantity).isPresent) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
             maxLines = 1,
-            modifier = Modifier.testTag(InventoryTestTags.INVENTORY_ITEM_QUANTITY),
+            modifier =
+                Modifier.testTag(
+                    if (item.quantity is PresenceQuantity) {
+                        InventoryTestTags.INVENTORY_ITEM_PRESENCE_STATUS
+                    } else {
+                        InventoryTestTags.INVENTORY_ITEM_QUANTITY
+                    },
+                ),
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+@Suppress("FunctionNaming", "LongMethod")
+private fun PresenceActionSheet(
+    state: PresenceActionUiState,
+    onDismiss: () -> Unit,
+    onTogglePresence: (Boolean) -> Unit,
+) {
+    if (state is PresenceActionUiState.Managing) {
+        QuedaModalBottomSheet(
+            onDismissRequest = onDismiss,
+            modifier = Modifier.testTag(InventoryTestTags.PRESENCE_ACTION_SHEET),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(QuedaSpacing.Medium),
+            ) {
+                Text(
+                    text = state.item.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                val statusText =
+                    if (state.isPresent) {
+                        stringResource(R.string.presence_status_present)
+                    } else {
+                        stringResource(R.string.presence_status_absent)
+                    }
+                Text(
+                    text = stringResource(R.string.presence_status_current, statusText),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(QuedaSpacing.Large))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.presence_status_switch_label),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Switch(
+                        checked = state.isPresent,
+                        onCheckedChange = onTogglePresence,
+                        enabled = !state.isSubmitting,
+                        modifier = Modifier.testTag(InventoryTestTags.PRESENCE_STATUS_SWITCH),
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
+                    )
+                }
+
+                if (state.error) {
+                    Spacer(modifier = Modifier.height(QuedaSpacing.Small))
+                    Text(
+                        text = stringResource(R.string.presence_action_error),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.testTag(InventoryTestTags.PRESENCE_ACTION_ERROR),
+                    )
+                }
+                Spacer(modifier = Modifier.height(QuedaSpacing.ExtraLarge))
+            }
+        }
     }
 }
 
@@ -401,18 +517,31 @@ private fun QuantityActionSheet(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                val unitRes =
+                    when (it.quantity) {
+                        is ExactQuantity ->
+                            when (it.quantity.unit) {
+                                MeasurementUnit.UNIT -> R.string.unit_abbreviation_unit
+                                MeasurementUnit.GRAM -> R.string.unit_abbreviation_gram
+                                MeasurementUnit.KILOGRAM -> R.string.unit_abbreviation_kilogram
+                                MeasurementUnit.MILLILITER -> R.string.unit_abbreviation_milliliter
+                                MeasurementUnit.LITER -> R.string.unit_abbreviation_liter
+                            }
+
+                        else -> R.string.unit_abbreviation_unit
+                    }
+                val amountText =
+                    if (it.quantity is ExactQuantity) {
+                        ExactQuantityUiFormatter.format(it.quantity as ExactQuantity)
+                    } else {
+                        ""
+                    }
                 Text(
                     text =
                         stringResource(
                             R.string.inventory_quantity_label,
-                            it.amountFormatted,
-                            when (it.quantity.unit) {
-                                MeasurementUnit.UNIT -> stringResource(R.string.unit_abbreviation_unit)
-                                MeasurementUnit.GRAM -> stringResource(R.string.unit_abbreviation_gram)
-                                MeasurementUnit.KILOGRAM -> stringResource(R.string.unit_abbreviation_kilogram)
-                                MeasurementUnit.MILLILITER -> stringResource(R.string.unit_abbreviation_milliliter)
-                                MeasurementUnit.LITER -> stringResource(R.string.unit_abbreviation_liter)
-                            },
+                            amountText,
+                            stringResource(unitRes),
                         ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -467,7 +596,12 @@ private fun QuantityActionSheet(
                         onUnitChange = onUnitChange,
                         onConfirm = onConfirm,
                         onCancel = onDismiss,
-                        compatibleUnits = getCompatibleUnits(state.item.quantity.unit),
+                        compatibleUnits =
+                            if (state.item.quantity is ExactQuantity) {
+                                getCompatibleUnits(state.item.quantity.unit)
+                            } else {
+                                emptyList()
+                            },
                     )
                 }
 
@@ -496,7 +630,12 @@ private fun QuantityActionSheet(
                         onUnitChange = onUnitChange,
                         onConfirm = onConfirm,
                         onCancel = onDismiss,
-                        compatibleUnits = getCompatibleUnits(state.item.quantity.unit),
+                        compatibleUnits =
+                            if (state.item.quantity is ExactQuantity) {
+                                getCompatibleUnits(state.item.quantity.unit)
+                            } else {
+                                emptyList()
+                            },
                     )
                 }
 
@@ -756,6 +895,7 @@ fun InventoryEmptyPreview() {
             onAmountChange = {},
             onUnitChange = {},
             onConfirm = {},
+            onTogglePresence = {},
         )
     }
 }
@@ -770,8 +910,8 @@ fun InventoryContentPreview() {
                 InventoryUiState.Content(
                     items =
                         listOf(
-                            InventoryItemUiModel("1", "Milk", "1", ExactQuantity.of("1", MeasurementUnit.LITER)),
-                            InventoryItemUiModel("2", "Bread", "1", ExactQuantity.of("1", MeasurementUnit.UNIT)),
+                            InventoryItemUiModel("1", "Milk", ExactQuantity.of("1", MeasurementUnit.LITER)),
+                            InventoryItemUiModel("2", "Bread", ExactQuantity.of("1", MeasurementUnit.UNIT)),
                         ),
                 ),
             onAddItem = {},
@@ -784,6 +924,7 @@ fun InventoryContentPreview() {
             onAmountChange = {},
             onUnitChange = {},
             onConfirm = {},
+            onTogglePresence = {},
         )
     }
 }

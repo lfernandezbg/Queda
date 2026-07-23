@@ -28,4 +28,9 @@ interface InventoryRepository {
     ): QuantityMutationResult
 
     suspend fun findItemByBarcode(barcode: Barcode): FindItemByBarcodeResult
+
+    suspend fun setPresence(
+        stockItemId: StockItemId,
+        isPresent: Boolean,
+    ): QuantityMutationResult
 }

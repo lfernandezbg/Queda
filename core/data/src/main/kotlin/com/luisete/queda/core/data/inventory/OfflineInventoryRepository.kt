@@ -18,9 +18,11 @@ import com.luisete.queda.core.model.id.HouseholdId
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.inventory.InventoryItem
 import com.luisete.queda.core.model.inventory.StockItem
+import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.product.Product
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -92,10 +94,14 @@ class OfflineInventoryRepository
                         inventoryDao.getStockItemById(stockItemId.value)
                             ?: return@withTransaction QuantityMutationResult.Failure(DomainError.ProductNotFound)
 
+                    if (entity.trackingMode != StockTrackingMode.EXACT.name) {
+                        return@withTransaction QuantityMutationResult.Failure(DomainError.IncompatibleMode)
+                    }
+
                     val currentQuantity =
                         ExactQuantity.of(
-                            BigDecimal(entity.quantityAmount),
-                            MeasurementUnit.valueOf(entity.quantityUnit),
+                            BigDecimal(requireNotNull(entity.quantityAmount)),
+                            MeasurementUnit.valueOf(requireNotNull(entity.quantityUnit)),
                         )
 
                     when (val result = operation(currentQuantity)) {
@@ -110,6 +116,33 @@ class OfflineInventoryRepository
 
                         is Failure -> QuantityMutationResult.Failure(result.error)
                     }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                QuantityMutationResult.Failure(DomainError.StorageFailure)
+            }
+
+        @Suppress("TooGenericExceptionCaught", "SwallowedException")
+        override suspend fun setPresence(
+            stockItemId: StockItemId,
+            isPresent: Boolean,
+        ): QuantityMutationResult =
+            try {
+                database.withTransaction {
+                    val entity =
+                        inventoryDao.getStockItemById(stockItemId.value)
+                            ?: return@withTransaction QuantityMutationResult.Failure(DomainError.ProductNotFound)
+
+                    if (entity.trackingMode != StockTrackingMode.PRESENCE.name) {
+                        return@withTransaction QuantityMutationResult.Failure(DomainError.IncompatibleMode)
+                    }
+
+                    inventoryDao.updateStockItemPresence(
+                        id = stockItemId.value,
+                        isPresent = isPresent,
+                    )
+                    QuantityMutationResult.Success(PresenceQuantity(isPresent))
                 }
             } catch (e: CancellationException) {
                 throw e

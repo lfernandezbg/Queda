@@ -59,4 +59,12 @@ object InventoryTestTags {
 
     // Add Item Barcode
     const val ADD_EXACT_ITEM_BARCODE_INDICATOR = "add_exact_item_barcode_indicator"
+
+    // Simple Presence
+    const val ADD_ITEM_MODE_EXACT = "add_item_mode_exact"
+    const val ADD_ITEM_MODE_PRESENCE = "add_item_mode_presence"
+    const val INVENTORY_ITEM_PRESENCE_STATUS = "inventory_item_presence_status"
+    const val PRESENCE_ACTION_SHEET = "presence_action_sheet"
+    const val PRESENCE_STATUS_SWITCH = "presence_status_switch"
+    const val PRESENCE_ACTION_ERROR = "presence_action_error"
 }

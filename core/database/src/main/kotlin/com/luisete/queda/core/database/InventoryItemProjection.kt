@@ -9,6 +9,8 @@ data class InventoryItemProjection(
     val stockItemId: String,
     val stockHouseholdId: String,
     val stockProductId: String,
-    val quantityAmount: String,
-    val quantityUnit: String,
+    val trackingMode: String,
+    val quantityAmount: String?,
+    val quantityUnit: String?,
+    val isPresent: Boolean?,
 )

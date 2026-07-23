@@ -6,13 +6,64 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: maestro-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  maestro-smoke:
-    runs-on: macos-15-intel
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should-run: ${{ steps.check-changes.outputs.should-run }}
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for relevant changes
+        id: check-changes
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            CHANGES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
+          else
+            git fetch origin ${{ github.base_ref }}
+            CHANGES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          fi
+
+          RELEVANT_PATTERNS="^app/|^core/|^feature/|^quality/|^build-logic/|^gradle/|^scripts/|build\.gradle|settings\.gradle|gradle\.properties|gradlew|\.maestro/|\.github/workflows/android-maestro\.yml"
+          if echo "$CHANGES" | grep -Eq "$RELEVANT_PATTERNS"; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate shard matrix
+        id: generate-matrix
+        run: |
+          FLOWS=$(find .maestro/flows/smoke -maxdepth 1 -name "*.yaml" | sort)
+          COUNT=$(echo "$FLOWS" | wc -l)
+          if [ "$COUNT" -eq 0 ]; then echo "No flows found"; exit 1; fi
+
+          MAX_PER_SHARD=8
+          MAX_SHARDS=8
+          SHARD_COUNT=$(( (COUNT + MAX_PER_SHARD - 1) / MAX_PER_SHARD ))
+          if [ $SHARD_COUNT -gt $MAX_SHARDS ]; then SHARD_COUNT=$MAX_SHARDS; fi
+
+          MATRIX=$(seq 0 $((SHARD_COUNT - 1)) | jq -R 'tonumber' | jq -s -c --arg count "$SHARD_COUNT" '{include: map({shard: ., shard_count: ($count | tonumber)})}')
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Count: $COUNT, Shards: $SHARD_COUNT"
+
+  build-e2e:
+    needs: plan
+    if: needs.plan.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -24,31 +75,211 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
 
-      - name: Grant execute permissions
+      - name: Build E2E APK
         run: |
           chmod +x gradlew
-          chmod +x scripts/*.sh
+          ./gradlew :app:assembleE2E
 
-      - name: Run Maestro smoke tests
+      - name: Verify APK existence
+        run: |
+          APK_COUNT=$(find app/build/outputs/apk/e2e -name "*.apk" | wc -l)
+          if [ "$APK_COUNT" -ne 1 ]; then
+            echo "Expected exactly one APK, found $APK_COUNT"
+            exit 1
+          fi
+          cp app/build/outputs/apk/e2e/*.apk app-e2e.apk
+
+      - name: Upload E2E APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-e2e
+          path: app-e2e.apk
+          retention-days: 1
+
+  prepare-maestro:
+    needs: plan
+    if: needs.plan.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Maestro Cache
+        uses: actions/cache@v4
+        id: maestro-cache
+        with:
+          path: ~/.maestro
+          key: maestro-2.6.0-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install Maestro 2.6.0
+        if: steps.maestro-cache.outputs.cache-hit != 'true'
+        env:
+          MAESTRO_VERSION: 2.6.0
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Validate Maestro Version
+        run: |
+          VERSION=$($HOME/.maestro/bin/maestro --version)
+          if ! echo "$VERSION" | grep -Eq "(^|[^0-9])2\.6\.0([^0-9]|$)"; then
+            echo "Unexpected Maestro version: $VERSION"
+            exit 1
+          fi
+
+  prepare-avd:
+    needs: plan
+    if: needs.plan.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v1-28-google_apis-x86_64-pixel_6-build15507667-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Create AVD and generate snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 28
           target: google_apis
           arch: x86_64
           profile: pixel_6
-          ram-size: 4096M
+          cores: 2
+          ram-size: 2048M
           heap-size: 512M
-          emulator-boot-timeout: 600
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          disable-animations: true
-          script: bash ./scripts/run-maestro-ci.sh
+          force-avd-creation: false
+          emulator-build: 15507667
+          emulator-boot-timeout: 300
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
 
-      - name: Upload Maestro results
+  maestro-shard:
+    needs: [ plan, build-e2e, prepare-maestro, prepare-avd ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: true
+      max-parallel: 8
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download E2E APK
+        uses: actions/download-artifact@v4
+        with:
+          name: app-e2e
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Restore Maestro Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.maestro
+          key: maestro-2.6.0-${{ runner.os }}-${{ runner.arch }}
+          fail-on-cache-miss: true
+
+      - name: Add Maestro to PATH
+        run: echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Restore AVD Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-v1-28-google_apis-x86_64-pixel_6-build15507667-${{ runner.os }}-${{ runner.arch }}
+          fail-on-cache-miss: true
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Maestro Shard ${{ matrix.shard }}
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          MAESTRO_CLI_NO_ANALYTICS: "true"
+          MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: "true"
+        with:
+          api-level: 28
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          force-avd-creation: false
+          emulator-build: 15507667
+          emulator-boot-timeout: 300
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
+          disable-animations: true
+          script: bash ./scripts/run-maestro-ci.sh --apk app-e2e.apk --shard-index ${{ matrix.shard }} --shard-count ${{ matrix.shard_count }} --output-dir results-shard-${{ matrix.shard }}
+
+      - name: Upload Shard Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-results
-          path: |
-            .maestro/results/**
-            ~/.maestro/tests/**
-          if-no-files-found: warn
+          name: maestro-results-shard-${{ matrix.shard }}
+          path: results-shard-${{ matrix.shard }}/**
+          retention-days: 3
+
+  maestro-smoke:
+    needs: [ plan, build-e2e, prepare-maestro, prepare-avd, maestro-shard ]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Consolidate Results
+        run: |
+          PLAN_RESULT="${{ needs.plan.result }}"
+          SHOULD_RUN="${{ needs.plan.outputs.should-run }}"
+          BUILD_RESULT="${{ needs.build-e2e.result }}"
+          PREPARE_MAESTRO_RESULT="${{ needs.prepare-maestro.result }}"
+          PREPARE_AVD_RESULT="${{ needs.prepare-avd.result }}"
+          SHARDS_RESULT="${{ needs.maestro-shard.result }}"
+
+          echo "Plan: $PLAN_RESULT (Should run: $SHOULD_RUN)"
+          echo "Build: $BUILD_RESULT"
+          echo "Prepare Maestro: $PREPARE_MAESTRO_RESULT"
+          echo "Prepare AVD: $PREPARE_AVD_RESULT"
+          echo "Shards: $SHARDS_RESULT"
+
+          if [ "$PLAN_RESULT" == "success" ] && [ "$SHOULD_RUN" == "false" ]; then
+            echo "PASS: Changes are documentary only."
+            exit 0
+          fi
+
+          if [ "$PLAN_RESULT" == "success" ] && [ "$SHOULD_RUN" == "true" ] && \
+             [ "$BUILD_RESULT" == "success" ] && \
+             [ "$PREPARE_MAESTRO_RESULT" == "success" ] && \
+             [ "$PREPARE_AVD_RESULT" == "success" ] && \
+             [ "$SHARDS_RESULT" == "success" ]; then
+            echo "PASS: All Maestro shards passed."
+            exit 0
+          fi
+
+          echo "FAIL: Maestro suite failed or was cancelled."
+          exit 1

@@ -17,6 +17,7 @@ import com.luisete.queda.core.model.barcode.BarcodeCreationResult
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import com.luisete.queda.core.testing.InventoryTestData
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -96,8 +97,9 @@ class OfflineInventoryRepositoryTest {
             units.forEach { unit ->
                 val found = res.find { it.stockItem.id.value == "s-${unit.name}" }
                 assertTrue("Item with unit ${unit.name} should be found", found != null)
-                assertEquals("1.234", found?.stockItem?.quantity?.amount?.toPlainString())
-                assertEquals(unit, found?.stockItem?.quantity?.unit)
+                val quantity = found?.stockItem?.quantity as ExactQuantity
+                assertEquals("1.234", quantity.amount.toPlainString())
+                assertEquals(unit, quantity.unit)
             }
         }
 
@@ -123,7 +125,7 @@ class OfflineInventoryRepositoryTest {
         runTest {
             val sid = "s1"
             dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
-            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "EXACT", "10", "UNIT", null))
 
             val result =
                 repository.consumeExactQuantity(
@@ -132,7 +134,8 @@ class OfflineInventoryRepositoryTest {
                 )
 
             val success = result as QuantityMutationResult.Success
-            assertEquals("7", success.newQuantity.amount.toPlainString())
+            val quantity = success.newQuantity as ExactQuantity
+            assertEquals("7", quantity.amount.toPlainString())
 
             val persisted = dao.getStockItemById(sid)
             assertEquals("7", persisted?.quantityAmount)
@@ -143,7 +146,7 @@ class OfflineInventoryRepositoryTest {
         runTest {
             val sid = "s1"
             dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
-            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "EXACT", "10", "UNIT", null))
 
             val result =
                 repository.correctExactQuantity(
@@ -152,7 +155,8 @@ class OfflineInventoryRepositoryTest {
                 )
 
             val success = result as QuantityMutationResult.Success
-            assertEquals("5", success.newQuantity.amount.toPlainString())
+            val quantity = success.newQuantity as ExactQuantity
+            assertEquals("5", quantity.amount.toPlainString())
 
             val persisted = dao.getStockItemById(sid)
             assertEquals("5", persisted?.quantityAmount)
@@ -173,7 +177,7 @@ class OfflineInventoryRepositoryTest {
         runTest {
             val sid = "s1"
             dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
-            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "EXACT", "10", "UNIT", null))
 
             // Consume more than available
             val result =
@@ -194,7 +198,7 @@ class OfflineInventoryRepositoryTest {
         runTest {
             val sid = "s1"
             dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
-            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "10", "UNIT"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "EXACT", "10", "UNIT", null))
 
             val result =
                 repository.correctExactQuantity(
@@ -244,6 +248,35 @@ class OfflineInventoryRepositoryTest {
 
             val result = repository.addExactInventoryItem(p2, s2)
             assertEquals(AddExactItemRepositoryResult.DuplicateBarcode, result)
+        }
+
+    @Test
+    fun setPresencePersistsResult() =
+        runTest {
+            val sid = "s1"
+            dao.insertProduct(ProductEntity("p1", householdId.value, "Salt", "salt"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "PRESENCE", null, null, true))
+
+            val result = repository.setPresence(StockItemId.from(sid), false)
+
+            assertTrue(result is QuantityMutationResult.Success)
+            assertEquals(false, (result as QuantityMutationResult.Success).newQuantity.let { (it as PresenceQuantity).isPresent })
+
+            val persisted = dao.getStockItemById(sid)
+            assertEquals(false, persisted?.isPresent)
+        }
+
+    @Test
+    fun setPresenceWithIncompatibleModeReturnsIncompatibleMode() =
+        runTest {
+            val sid = "s1"
+            dao.insertProduct(ProductEntity("p1", householdId.value, "Milk", "milk"))
+            dao.insertStockItem(StockItemEntity(sid, householdId.value, "p1", "EXACT", "10", "UNIT", null))
+
+            val result = repository.setPresence(StockItemId.from(sid), false)
+
+            val failure = result as QuantityMutationResult.Failure
+            assertEquals(DomainError.IncompatibleMode, failure.error)
         }
 
     private fun <T> Any.getOrThrow(): T =

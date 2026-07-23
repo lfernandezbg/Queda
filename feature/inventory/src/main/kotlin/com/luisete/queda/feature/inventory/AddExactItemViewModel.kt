@@ -7,6 +7,7 @@ import com.luisete.queda.core.domain.inventory.AddExactInventoryItemResult
 import com.luisete.queda.core.domain.inventory.AddExactInventoryItemUseCase
 import com.luisete.queda.core.domain.inventory.ExactQuantityInputError
 import com.luisete.queda.core.domain.inventory.ProductNameCreationError
+import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -31,6 +32,7 @@ class AddExactItemViewModel
                     nameInput = savedStateHandle[KEY_NAME] ?: "",
                     quantityInput = savedStateHandle[KEY_QUANTITY] ?: "",
                     selectedUnit = savedStateHandle[KEY_UNIT] ?: MeasurementUnit.UNIT,
+                    trackingMode = savedStateHandle[KEY_TRACKING_MODE] ?: StockTrackingMode.EXACT,
                     barcode = savedStateHandle[KEY_BARCODE],
                 ),
             )
@@ -69,6 +71,16 @@ class AddExactItemViewModel
             mutableUiState.update { it.copy(selectedUnit = unit) }
         }
 
+        fun onTrackingModeChange(mode: StockTrackingMode) {
+            savedStateHandle[KEY_TRACKING_MODE] = mode
+            mutableUiState.update {
+                it.copy(
+                    trackingMode = mode,
+                    quantityError = if (mode == StockTrackingMode.PRESENCE) null else it.quantityError,
+                )
+            }
+        }
+
         fun onBarcodeAssociated(barcode: String) {
             savedStateHandle[KEY_BARCODE] = barcode
             mutableUiState.update { it.copy(barcode = barcode, duplicateBarcodeError = false) }
@@ -96,6 +108,7 @@ class AddExactItemViewModel
                         rawQuantity = mutableUiState.value.quantityInput,
                         unit = mutableUiState.value.selectedUnit,
                         rawBarcode = mutableUiState.value.barcode,
+                        trackingMode = mutableUiState.value.trackingMode,
                     )
 
                 when (result) {
@@ -164,5 +177,6 @@ class AddExactItemViewModel
             private const val KEY_QUANTITY = "quantity"
             private const val KEY_UNIT = "unit"
             private const val KEY_BARCODE = "barcode"
+            private const val KEY_TRACKING_MODE = "trackingMode"
         }
     }

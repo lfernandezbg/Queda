@@ -81,3 +81,7 @@ class ExactQuantity private constructor(
 data class ApproximateQuantity(
     val level: ApproximateLevel,
 ) : StockQuantity
+
+data class PresenceQuantity(
+    val isPresent: Boolean,
+) : StockQuantity

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -42,7 +43,7 @@ class InventoryDaoTest {
     fun insertedProductAndStockAreObserved() =
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")
-            val stock = StockItemEntity("s1", "h1", "p1", "1", "LITER")
+            val stock = StockItemEntity("s1", "h1", "p1", "EXACT", "1", "LITER", null)
             dao.insertProduct(product)
             dao.insertStockItem(stock)
 
@@ -50,6 +51,7 @@ class InventoryDaoTest {
             assertEquals(1, result.size)
             assertEquals("p1", result[0].productId)
             assertEquals("s1", result[0].stockItemId)
+            assertEquals("EXACT", result[0].trackingMode)
         }
 
     @Test
@@ -61,7 +63,7 @@ class InventoryDaoTest {
                 val sid = "s$i"
                 val amount = "1.234"
                 dao.insertProduct(ProductEntity(id, "h1", "Item$i", "item$i"))
-                dao.insertStockItem(StockItemEntity(sid, "h1", id, amount, unit))
+                dao.insertStockItem(StockItemEntity(sid, "h1", id, "EXACT", amount, unit, null))
             }
 
             val result = dao.observeExactInventoryItems("h1").first()
@@ -76,18 +78,18 @@ class InventoryDaoTest {
         runTest {
             // Unique names: Apple, Bread, Zebra
             dao.insertProduct(ProductEntity("p_zebra", "h1", "Zebra", "zebra"))
-            dao.insertStockItem(StockItemEntity("s1", "h1", "p_zebra", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s1", "h1", "p_zebra", "EXACT", "1", "UNIT", null))
 
             dao.insertProduct(ProductEntity("p_apple1", "h1", "Apple", "apple"))
-            dao.insertStockItem(StockItemEntity("s2", "h1", "p_apple1", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s2", "h1", "p_apple1", "EXACT", "1", "UNIT", null))
 
             dao.insertProduct(ProductEntity("p_bread", "h1", "Bread", "bread"))
-            dao.insertStockItem(StockItemEntity("s3", "h1", "p_bread", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s3", "h1", "p_bread", "EXACT", "1", "UNIT", null))
 
             // Same product name is forbidden by unique index, so I'll use different names
             // But the rule says check order by p.id and s.id.
             // I'll add two stock items for same product (possible in DB)
-            dao.insertStockItem(StockItemEntity("s0", "h1", "p_apple1", "2", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s0", "h1", "p_apple1", "EXACT", "2", "UNIT", null))
 
             val result = dao.observeExactInventoryItems("h1").first()
             assertEquals(4, result.size)
@@ -113,9 +115,9 @@ class InventoryDaoTest {
     fun differentHouseholdsAreIsolated() =
         runTest {
             dao.insertProduct(ProductEntity("p1", "h1", "Milk", "milk"))
-            dao.insertStockItem(StockItemEntity("s1", "h1", "p1", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s1", "h1", "p1", "EXACT", "1", "UNIT", null))
             dao.insertProduct(ProductEntity("p2", "h2", "Bread", "bread"))
-            dao.insertStockItem(StockItemEntity("s2", "h2", "p2", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s2", "h2", "p2", "EXACT", "1", "UNIT", null))
 
             assertEquals(1, dao.observeExactInventoryItems("h1").first().size)
             assertEquals(1, dao.observeExactInventoryItems("h2").first().size)
@@ -125,10 +127,10 @@ class InventoryDaoTest {
     fun duplicateNormalizedNameInSameHouseholdIsRejected() =
         runTest {
             dao.insertProduct(ProductEntity("p1", "h1", "Milk", "milk"))
-            dao.insertStockItem(StockItemEntity("s1", "h1", "p1", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s1", "h1", "p1", "EXACT", "1", "UNIT", null))
 
             val duplicate = ProductEntity("p2", "h1", "MILK", "milk")
-            val stock = StockItemEntity("s2", "h1", "p2", "1", "UNIT")
+            val stock = StockItemEntity("s2", "h1", "p2", "EXACT", "1", "UNIT", null)
 
             val result = dao.addExactInventoryItem(duplicate, stock)
             assertEquals(AddExactInventoryItemDbResult.DuplicateProductName, result)
@@ -139,11 +141,11 @@ class InventoryDaoTest {
         runTest {
             dao.addExactInventoryItem(
                 ProductEntity("p1", "h1", "Milk", "milk"),
-                StockItemEntity("s1", "h1", "p1", "1", "UNIT"),
+                StockItemEntity("s1", "h1", "p1", "EXACT", "1", "UNIT", null),
             )
             dao.addExactInventoryItem(
                 ProductEntity("p2", "h2", "Milk", "milk"),
-                StockItemEntity("s2", "h2", "p2", "1", "UNIT"),
+                StockItemEntity("s2", "h2", "p2", "EXACT", "1", "UNIT", null),
             )
             assertEquals(1, dao.observeExactInventoryItems("h1").first().size)
             assertEquals(1, dao.observeExactInventoryItems("h2").first().size)
@@ -154,10 +156,10 @@ class InventoryDaoTest {
         runTest {
             // Pre-insert a stock item with ID "s1" to cause duplicate PK failure later
             dao.insertProduct(ProductEntity("p0", "h1", "Other", "other"))
-            dao.insertStockItem(StockItemEntity("s1", "h1", "p0", "1", "UNIT"))
+            dao.insertStockItem(StockItemEntity("s1", "h1", "p0", "EXACT", "1", "UNIT", null))
 
             val product = ProductEntity("p1", "h1", "Milk", "milk")
-            val duplicateStockId = StockItemEntity("s1", "h1", "p1", "1", "UNIT")
+            val duplicateStockId = StockItemEntity("s1", "h1", "p1", "EXACT", "1", "UNIT", null)
 
             try {
                 dao.addExactInventoryItem(product, duplicateStockId)
@@ -180,7 +182,7 @@ class InventoryDaoTest {
 
             dao.addExactInventoryItem(
                 ProductEntity("p1", "h1", "Milk", "milk"),
-                StockItemEntity("s1", "h1", "p1", "1", "UNIT"),
+                StockItemEntity("s1", "h1", "p1", "EXACT", "1", "UNIT", null),
             )
 
             assertEquals(1, flow.first().size)
@@ -191,7 +193,7 @@ class InventoryDaoTest {
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")
             // Stock item points to p1 but belongs to h2
-            val stock = StockItemEntity("s1", "h2", "p1", "1", "LITER")
+            val stock = StockItemEntity("s1", "h2", "p1", "EXACT", "1", "LITER", null)
             dao.insertProduct(product)
             dao.insertStockItem(stock)
 
@@ -205,7 +207,7 @@ class InventoryDaoTest {
     fun mismatchedProductIdIsRejectedBeforeWriting() =
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")
-            val stock = StockItemEntity("s1", "h1", "p2", "1", "LITER") // p2 != p1
+            val stock = StockItemEntity("s1", "h1", "p2", "EXACT", "1", "LITER", null) // p2 != p1
 
             try {
                 dao.addExactInventoryItem(product, stock)
@@ -219,7 +221,7 @@ class InventoryDaoTest {
     fun mismatchedHouseholdIsRejectedBeforeWriting() =
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")
-            val stock = StockItemEntity("s1", "h2", "p1", "1", "LITER") // h2 != h1
+            val stock = StockItemEntity("s1", "h2", "p1", "EXACT", "1", "LITER", null) // h2 != h1
 
             try {
                 dao.addExactInventoryItem(product, stock)
@@ -233,7 +235,7 @@ class InventoryDaoTest {
     fun getStockItemByIdReturnsCorrectEntity() =
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")
-            val stock = StockItemEntity("s1", "h1", "p1", "1", "LITER")
+            val stock = StockItemEntity("s1", "h1", "p1", "EXACT", "1", "LITER", null)
             dao.insertProduct(product)
             dao.insertStockItem(stock)
 
@@ -245,7 +247,7 @@ class InventoryDaoTest {
     fun updateStockItemQuantityChangesPersistedValue() =
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")
-            val stock = StockItemEntity("s1", "h1", "p1", "1", "LITER")
+            val stock = StockItemEntity("s1", "h1", "p1", "EXACT", "1", "LITER", null)
             dao.insertProduct(product)
             dao.insertStockItem(stock)
 
@@ -254,5 +256,36 @@ class InventoryDaoTest {
             val result = dao.getStockItemById("s1")
             assertEquals("2.5", result?.quantityAmount)
             assertEquals("GRAM", result?.quantityUnit)
+        }
+
+    @Test
+    fun insertAndReadPresenceItem() =
+        runTest {
+            val product = ProductEntity("p1", "h1", "Salt", "salt")
+            val stock = StockItemEntity("s1", "h1", "p1", "PRESENCE", null, null, true)
+            dao.insertProduct(product)
+            dao.insertStockItem(stock)
+
+            val result = dao.observeExactInventoryItems("h1").first()
+            assertEquals(1, result.size)
+            assertEquals("salt", result[0].productNormalizedName)
+            assertEquals("PRESENCE", result[0].trackingMode)
+            assertEquals(true, result[0].isPresent)
+            assertNull(result[0].quantityAmount)
+            assertNull(result[0].quantityUnit)
+        }
+
+    @Test
+    fun updatePresenceItem() =
+        runTest {
+            val product = ProductEntity("p1", "h1", "Salt", "salt")
+            val stock = StockItemEntity("s1", "h1", "p1", "PRESENCE", null, null, true)
+            dao.insertProduct(product)
+            dao.insertStockItem(stock)
+
+            dao.updateStockItemPresence("s1", false)
+
+            val result = dao.getStockItemById("s1")
+            assertEquals(false, result?.isPresent)
         }
 }

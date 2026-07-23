@@ -6,16 +6,17 @@
 2. Editar y eliminar.
 3. [DONE] Consumir y corregir cantidad exacta.
 4. [DONE] Escaneo local de código de barras.
-5. Cantidad aproximada.
-6. Ubicaciones.
-7. Lotes y múltiples existencias.
-8. Fechas y apertura.
-9. Hoy / Consumir primero.
-10. Lista de la compra.
-11. Integración inventario-compra.
-12. Revisión.
-13. Historial.
-14. Ajustes y cierre del MVP.
+5. [DONE] Presencia simple: Hay / No hay.
+6. Cantidad aproximada.
+7. Ubicaciones.
+8. Lotes y múltiples existencias.
+9. Fechas y apertura.
+10. Hoy / Consumir primero.
+11. Lista de la compra.
+12. Integración inventario-compra.
+13. Revisión.
+14. Historial.
+15. Ajustes y cierre del MVP.
 
 ## Después del MVP
 

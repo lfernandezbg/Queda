@@ -1,0 +1,22 @@
+appId: com.luisete.queda.e2e
+---
+- runFlow: 01_reset_and_launch.yaml
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Salt"
+- tapOn:
+    id: "add_item_mode_presence"
+- tapOn:
+    id: "add_exact_item_save_button"
+- extendedWaitUntil:
+    visible: "Salt"
+- extendedWaitUntil:
+    visible: "Hay"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Salt"
+- extendedWaitUntil:
+    visible: "Hay"

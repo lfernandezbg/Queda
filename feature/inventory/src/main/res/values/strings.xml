@@ -77,4 +77,15 @@
     <string name="error_incompatible_unit">La unidad no es compatible con el alimento.</string>
     <string name="error_quantity_unchanged">La nueva cantidad es igual a la actual.</string>
     <string name="error_product_not_found">El alimento ya no existe.</string>
+
+    <!-- Simple Presence -->
+    <string name="add_item_control_label">Control</string>
+    <string name="add_item_mode_exact_label">Cantidad exacta</string>
+    <string name="add_item_mode_presence_label">Solo presencia</string>
+    <string name="presence_status_present">Hay</string>
+    <string name="presence_status_absent">No hay</string>
+    <string name="presence_action_title">Gestionar presencia</string>
+    <string name="presence_status_current">Estado actual: %1$s</string>
+    <string name="presence_status_switch_label">Hay / No hay</string>
+    <string name="presence_action_error">No se ha podido cambiar el estado. Inténtalo de nuevo.</string>
 </resources>

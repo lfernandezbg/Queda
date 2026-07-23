@@ -3,6 +3,7 @@ package com.luisete.queda.feature.inventory
 import androidx.lifecycle.SavedStateHandle
 import com.luisete.queda.core.domain.inventory.AddExactInventoryItemUseCase
 import com.luisete.queda.core.domain.inventory.AddExactItemRepositoryResult
+import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import com.luisete.queda.core.testing.FakeCurrentHouseholdIdProvider
 import com.luisete.queda.core.testing.FakeInventoryRepository
@@ -225,13 +226,53 @@ class AddExactItemViewModelTest {
         }
 
     @Test
-    fun savedStateHandleRestoresNameQuantityAndUnit() =
+    fun savedStateHandleRestoresNameQuantityUnitAndTrackingMode() =
         runTest(testDispatcher) {
-            val handle = SavedStateHandle(mapOf("name" to "Saved", "quantity" to "5", "unit" to MeasurementUnit.GRAM))
+            val handle =
+                SavedStateHandle(
+                    mapOf(
+                        "name" to "Saved",
+                        "quantity" to "5",
+                        "unit" to MeasurementUnit.GRAM,
+                        "trackingMode" to StockTrackingMode.PRESENCE,
+                    ),
+                )
             val restoredViewModel = AddExactItemViewModel(useCase, handle)
 
             assertEquals("Saved", restoredViewModel.uiState.value.nameInput)
             assertEquals("5", restoredViewModel.uiState.value.quantityInput)
             assertEquals(MeasurementUnit.GRAM, restoredViewModel.uiState.value.selectedUnit)
+            assertEquals(StockTrackingMode.PRESENCE, restoredViewModel.uiState.value.trackingMode)
+        }
+
+    @Test
+    fun changingToPresenceClearsQuantityErrors() =
+        runTest(testDispatcher) {
+            val viewModel = AddExactItemViewModel(useCase, SavedStateHandle())
+            viewModel.save()
+            advanceUntilIdle()
+            assertEquals(QuantityInputError.BLANK, viewModel.uiState.value.quantityError)
+
+            viewModel.onTrackingModeChange(StockTrackingMode.PRESENCE)
+            assertNull(viewModel.uiState.value.quantityError)
+        }
+
+    @Test
+    fun savingPresenceDoesNotValidateQuantity() =
+        runTest(testDispatcher) {
+            val viewModel = AddExactItemViewModel(useCase, SavedStateHandle())
+            viewModel.onNameChange("Salt")
+            viewModel.onTrackingModeChange(StockTrackingMode.PRESENCE)
+            viewModel.onQuantityChange("") // Blank but should be ignored
+
+            viewModel.save()
+            advanceUntilIdle()
+
+            assertEquals(1, repository.addCallsCount)
+            val results = mutableListOf<Unit>()
+            val job = launch { viewModel.successEvent.collect { results.add(it) } }
+            advanceUntilIdle()
+            assertEquals(1, results.size)
+            job.cancel()
         }
 }

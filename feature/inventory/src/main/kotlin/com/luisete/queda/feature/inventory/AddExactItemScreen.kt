@@ -18,8 +18,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +32,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -49,6 +54,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luisete.queda.core.designsystem.component.QuedaBottomActionBar
@@ -62,6 +68,7 @@ import com.luisete.queda.core.designsystem.component.QuedaTextField
 import com.luisete.queda.core.designsystem.component.QuedaTopAppBar
 import com.luisete.queda.core.designsystem.theme.QuedaSpacing
 import com.luisete.queda.core.designsystem.theme.QuedaTheme
+import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import kotlinx.coroutines.delay
 
@@ -86,6 +93,7 @@ fun AddExactItemRoute(
         onNameChange = viewModel::onNameChange,
         onQuantityChange = viewModel::onQuantityChange,
         onUnitChange = viewModel::onUnitChange,
+        onTrackingModeChange = viewModel::onTrackingModeChange,
         onSave = viewModel::save,
         onCancel = onBack,
     )
@@ -98,6 +106,7 @@ fun AddExactItemScreen(
     onNameChange: (String) -> Unit,
     onQuantityChange: (String) -> Unit,
     onUnitChange: (MeasurementUnit) -> Unit,
+    onTrackingModeChange: (StockTrackingMode) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -127,6 +136,7 @@ fun AddExactItemScreen(
             onNameChange = onNameChange,
             onQuantityChange = onQuantityChange,
             onUnitChange = onUnitChange,
+            onTrackingModeChange = onTrackingModeChange,
             onNext = { focusManager.moveFocus(FocusDirection.Down) },
             onDone = { focusManager.clearFocus() },
         )
@@ -161,6 +171,7 @@ private fun AddExactItemContent(
     onNameChange: (String) -> Unit,
     onQuantityChange: (String) -> Unit,
     onUnitChange: (MeasurementUnit) -> Unit,
+    onTrackingModeChange: (StockTrackingMode) -> Unit,
     onNext: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -179,19 +190,10 @@ private fun AddExactItemContent(
             onNameChange = onNameChange,
             onQuantityChange = onQuantityChange,
             onUnitChange = onUnitChange,
+            onTrackingModeChange = onTrackingModeChange,
             onNext = onNext,
             onDone = onDone,
         )
-
-        if (uiState.barcode != null) {
-            Spacer(modifier = Modifier.height(QuedaSpacing.Medium))
-            Text(
-                text = stringResource(R.string.add_exact_item_barcode_associated, uiState.barcode),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_BARCODE_INDICATOR),
-            )
-        }
     }
 }
 
@@ -242,6 +244,7 @@ private fun AddExactItemForm(
     onNameChange: (String) -> Unit,
     onQuantityChange: (String) -> Unit,
     onUnitChange: (MeasurementUnit) -> Unit,
+    onTrackingModeChange: (StockTrackingMode) -> Unit,
     onNext: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -255,6 +258,46 @@ private fun AddExactItemForm(
         onNext = onNext,
     )
 
+    if (uiState.barcode != null) {
+        Spacer(modifier = Modifier.height(QuedaSpacing.Small))
+        Text(
+            text = stringResource(R.string.add_exact_item_barcode_associated, uiState.barcode),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_BARCODE_INDICATOR),
+        )
+    }
+
+    Spacer(modifier = Modifier.height(QuedaSpacing.Medium))
+
+    TrackingModeSelector(
+        selectedMode = uiState.trackingMode,
+        onModeChange = onTrackingModeChange,
+        enabled = !uiState.isSaving,
+    )
+
+    if (uiState.trackingMode == StockTrackingMode.EXACT) {
+        ExactQuantityFields(
+            uiState = uiState,
+            onQuantityChange = onQuantityChange,
+            onUnitChange = onUnitChange,
+            onDone = onDone,
+        )
+    }
+
+    BarcodeErrorIndicator(
+        duplicateBarcodeError = uiState.duplicateBarcodeError,
+        storageError = uiState.storageError,
+    )
+}
+
+@Composable
+private fun ExactQuantityFields(
+    uiState: AddExactItemUiState,
+    onQuantityChange: (String) -> Unit,
+    onUnitChange: (MeasurementUnit) -> Unit,
+    onDone: () -> Unit,
+) {
     Spacer(modifier = Modifier.height(QuedaSpacing.Medium))
 
     QuantityField(
@@ -272,8 +315,14 @@ private fun AddExactItemForm(
         onUnitChange = onUnitChange,
         enabled = !uiState.isSaving,
     )
+}
 
-    if (uiState.duplicateBarcodeError) {
+@Composable
+private fun BarcodeErrorIndicator(
+    duplicateBarcodeError: Boolean,
+    storageError: Boolean,
+) {
+    if (duplicateBarcodeError) {
         Text(
             text = stringResource(R.string.error_duplicate_barcode),
             style = MaterialTheme.typography.bodySmall,
@@ -285,7 +334,7 @@ private fun AddExactItemForm(
         )
     }
 
-    if (uiState.storageError) {
+    if (storageError) {
         Text(
             text = stringResource(R.string.error_storage_failure),
             style = MaterialTheme.typography.bodySmall,
@@ -370,6 +419,97 @@ private fun QuantityField(
         supportingText = errorText,
         keyboardActions = KeyboardActions(onDone = { onDone() }),
     )
+}
+
+@Composable
+private fun TrackingModeSelector(
+    selectedMode: StockTrackingMode,
+    onModeChange: (StockTrackingMode) -> Unit,
+    enabled: Boolean,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.add_item_control_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = QuedaSpacing.Small)
+                    .selectableGroup(),
+        ) {
+            TrackingModeOption(
+                text = stringResource(R.string.add_item_mode_exact_label),
+                selected = selectedMode == StockTrackingMode.EXACT,
+                onClick = { onModeChange(StockTrackingMode.EXACT) },
+                enabled = enabled,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .testTag(InventoryTestTags.ADD_ITEM_MODE_EXACT),
+            )
+            Spacer(modifier = Modifier.width(QuedaSpacing.Small))
+            TrackingModeOption(
+                text = stringResource(R.string.add_item_mode_presence_label),
+                selected = selectedMode == StockTrackingMode.PRESENCE,
+                onClick = { onModeChange(StockTrackingMode.PRESENCE) },
+                enabled = enabled,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .testTag(InventoryTestTags.ADD_ITEM_MODE_PRESENCE),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrackingModeOption(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor =
+        if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        }
+    val contentColor =
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
+
+    Surface(
+        modifier =
+            modifier
+                .height(48.dp)
+                .selectable(
+                    selected = selected,
+                    onClick = onClick,
+                    enabled = enabled,
+                    role = Role.RadioButton,
+                ),
+        shape = MaterialTheme.shapes.small,
+        color = backgroundColor,
+        contentColor = contentColor,
+        border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, borderColor) else null,
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.fillMaxWidth().wrapContentHeight(Alignment.CenterVertically),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
 }
 
 @Composable
@@ -518,6 +658,7 @@ fun AddExactItemScreenPreview() {
             onNameChange = {},
             onQuantityChange = {},
             onUnitChange = {},
+            onTrackingModeChange = {},
             onSave = {},
             onCancel = {},
         )

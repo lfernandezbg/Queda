@@ -1,6 +1,9 @@
 package com.luisete.queda.core.domain.inventory
 
+import com.luisete.queda.core.model.inventory.StockTrackingMode
+import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import com.luisete.queda.core.testing.FakeCurrentHouseholdIdProvider
 import com.luisete.queda.core.testing.FakeInventoryRepository
 import kotlinx.coroutines.test.runTest
@@ -27,8 +30,9 @@ class AddExactInventoryItemUseCaseTests {
     fun validUnitItemIsAdded() {
         runTest {
             val result = useCase("Eggs", "6", MeasurementUnit.UNIT) as AddExactInventoryItemResult.Added
+            val quantity = result.inventoryItem.stockItem.quantity as ExactQuantity
             assertEquals("Eggs", result.inventoryItem.product.name.displayValue)
-            assertEquals(0, result.inventoryItem.stockItem.quantity.amount.compareTo(BigDecimal("6")))
+            assertEquals(0, quantity.amount.compareTo(BigDecimal("6")))
             assertEquals(1, repository.addCallsCount)
         }
     }
@@ -37,7 +41,8 @@ class AddExactInventoryItemUseCaseTests {
     fun validGramItemIsAdded() {
         runTest {
             val result = useCase("Flour", "500", MeasurementUnit.GRAM) as AddExactInventoryItemResult.Added
-            assertEquals(MeasurementUnit.GRAM, result.inventoryItem.stockItem.quantity.unit)
+            val quantity = result.inventoryItem.stockItem.quantity as ExactQuantity
+            assertEquals(MeasurementUnit.GRAM, quantity.unit)
         }
     }
 
@@ -45,7 +50,8 @@ class AddExactInventoryItemUseCaseTests {
     fun validKilogramItemWithDotIsAdded() {
         runTest {
             val result = useCase("Rice", "1.5", MeasurementUnit.KILOGRAM) as AddExactInventoryItemResult.Added
-            assertEquals(0, result.inventoryItem.stockItem.quantity.amount.compareTo(BigDecimal("1.5")))
+            val quantity = result.inventoryItem.stockItem.quantity as ExactQuantity
+            assertEquals(0, quantity.amount.compareTo(BigDecimal("1.5")))
         }
     }
 
@@ -53,7 +59,8 @@ class AddExactInventoryItemUseCaseTests {
     fun validLiterItemWithCommaIsAdded() {
         runTest {
             val result = useCase("Milk", "1,25", MeasurementUnit.LITER) as AddExactInventoryItemResult.Added
-            assertEquals(0, result.inventoryItem.stockItem.quantity.amount.compareTo(BigDecimal("1.25")))
+            val quantity = result.inventoryItem.stockItem.quantity as ExactQuantity
+            assertEquals(0, quantity.amount.compareTo(BigDecimal("1.25")))
         }
     }
 
@@ -61,7 +68,8 @@ class AddExactInventoryItemUseCaseTests {
     fun validMilliliterItemWithThreeDecimalsIsAdded() {
         runTest {
             val result = useCase("Water", "0.001", MeasurementUnit.MILLILITER) as AddExactInventoryItemResult.Added
-            assertEquals(0, result.inventoryItem.stockItem.quantity.amount.compareTo(BigDecimal("0.001")))
+            val quantity = result.inventoryItem.stockItem.quantity as ExactQuantity
+            assertEquals(0, quantity.amount.compareTo(BigDecimal("0.001")))
         }
     }
 
@@ -217,7 +225,8 @@ class AddExactInventoryItemUseCaseTests {
     fun repositoryReceivesOriginalSelectedUnit() {
         runTest {
             useCase("Milk", "1", MeasurementUnit.LITER)
-            assertEquals(MeasurementUnit.LITER, repository.addedStockItems[0].quantity.unit)
+            val quantity = repository.addedStockItems[0].quantity as ExactQuantity
+            assertEquals(MeasurementUnit.LITER, quantity.unit)
         }
     }
 
@@ -225,9 +234,58 @@ class AddExactInventoryItemUseCaseTests {
     fun addedResultContainsTheCreatedInventoryItem() {
         runTest {
             val res = useCase("Milk", "1", MeasurementUnit.LITER) as AddExactInventoryItemResult.Added
+            val quantity = res.inventoryItem.stockItem.quantity as ExactQuantity
             assertEquals("Milk", res.inventoryItem.product.name.displayValue)
-            assertEquals(0, res.inventoryItem.stockItem.quantity.amount.compareTo(BigDecimal.ONE))
-            assertEquals(MeasurementUnit.LITER, res.inventoryItem.stockItem.quantity.unit)
+            assertEquals(0, quantity.amount.compareTo(BigDecimal.ONE))
+            assertEquals(MeasurementUnit.LITER, quantity.unit)
+        }
+    }
+
+    @Test
+    fun presenceItemIsAddedWithInitialPresentState() {
+        runTest {
+            val result =
+                useCase(
+                    rawName = "Presence Item",
+                    rawQuantity = "",
+                    unit = MeasurementUnit.UNIT,
+                    trackingMode = StockTrackingMode.PRESENCE,
+                ) as AddExactInventoryItemResult.Added
+
+            val quantity = result.inventoryItem.stockItem.quantity as PresenceQuantity
+            assertTrue(quantity.isPresent)
+            assertEquals(1, repository.addCallsCount)
+        }
+    }
+
+    @Test
+    fun presenceItemDoesNotValidateQuantity() {
+        runTest {
+            val result =
+                useCase(
+                    rawName = "Presence Item",
+                    rawQuantity = "invalid",
+                    unit = MeasurementUnit.UNIT,
+                    trackingMode = StockTrackingMode.PRESENCE,
+                ) as AddExactInventoryItemResult.Added
+
+            assertTrue((result.inventoryItem.stockItem.quantity as PresenceQuantity).isPresent)
+        }
+    }
+
+    @Test
+    fun presenceItemValidatesName() {
+        runTest {
+            val result =
+                useCase(
+                    rawName = "",
+                    rawQuantity = "",
+                    unit = MeasurementUnit.UNIT,
+                    trackingMode = StockTrackingMode.PRESENCE,
+                ) as AddExactInventoryItemResult.InvalidInput
+
+            assertEquals(ProductNameCreationError.Blank, result.nameReason)
+            assertEquals(null, result.quantityReason)
         }
     }
 }
