@@ -236,12 +236,7 @@ jobs:
           emulator-boot-timeout: 300
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-metrics
           disable-animations: true
-          script: |
-            bash ./scripts/run-maestro-ci.sh \
-              --apk app-e2e.apk \
-              --shard-index ${{ matrix.shard }} \
-              --shard-count ${{ matrix.shard_count }} \
-              --output-dir results-shard-${{ matrix.shard }}
+          script: bash ./scripts/run-maestro-ci.sh --apk app-e2e.apk --shard-index ${{ matrix.shard }} --shard-count ${{ matrix.shard_count }} --output-dir results-shard-${{ matrix.shard }}
 
       - name: Upload Shard Results
         if: always()
