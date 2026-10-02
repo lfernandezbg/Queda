@@ -2,7 +2,6 @@
 
 package com.luisete.queda.core.designsystem.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -17,11 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private const val DEEP_TEAL_HEX = 0xFF004D40L
+private const val DEEP_TEAL_HEX = 0xFF174F43L
 private const val DEEP_TEAL_LIGHT_HEX = 0xFF39796BL
-private const val NEAR_BLACK_HEX = 0xFF1A1C1EL
+private const val NEAR_BLACK_HEX = 0xFF172521L
 private const val RESTRAINED_GREY_HEX = 0xFF44474EL
-private const val WARM_BACKGROUND_HEX = 0xFFFAF9F6L
+private const val WARM_BACKGROUND_HEX = 0xFFF6F4ECL
 private const val ERROR_RED_HEX = 0xFFBA1A1AL
 
 private val DeepTeal = Color(DEEP_TEAL_HEX)
@@ -145,9 +144,9 @@ private val QuedaTypography =
             ),
     )
 
-private const val SHAPE_SMALL = 4
-private const val SHAPE_MEDIUM = 8
-private const val SHAPE_LARGE = 12
+private const val SHAPE_SMALL = 10
+private const val SHAPE_MEDIUM = 15
+private const val SHAPE_LARGE = 22
 
 private val QuedaShapes =
     Shapes(
@@ -159,7 +158,7 @@ private val QuedaShapes =
 @Composable
 @Suppress("FunctionNaming")
 fun QuedaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

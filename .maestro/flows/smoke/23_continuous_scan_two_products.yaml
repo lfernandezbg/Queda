@@ -1,0 +1,26 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- openLink: "queda-e2e://continuous?barcode=3017620422003"
+- extendedWaitUntil:
+    visible: "Revisa y sigue"
+    timeout: 30000
+- assertVisible: "Revisa y sigue"
+- tapOn:
+    id: "continuous_scan_save"
+- extendedWaitUntil:
+    visible: "1 guardado en esta sesión"
+    timeout: 30000
+- tapOn: "Leer siguiente código de prueba"
+- extendedWaitUntil:
+    visible: "Revisa y sigue"
+    timeout: 30000
+- tapOn:
+    id: "continuous_scan_name"
+- inputText: "Cafe de prueba"
+- hideKeyboard
+- tapOn:
+    id: "continuous_scan_save"
+- extendedWaitUntil:
+    visible: "2 guardados en esta sesión"
+    timeout: 30000

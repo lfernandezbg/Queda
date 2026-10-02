@@ -34,6 +34,9 @@ class AddExactItemViewModel
                     selectedUnit = savedStateHandle[KEY_UNIT] ?: MeasurementUnit.UNIT,
                     trackingMode = savedStateHandle[KEY_TRACKING_MODE] ?: StockTrackingMode.EXACT,
                     barcode = savedStateHandle[KEY_BARCODE],
+                    lookupFeedback =
+                        savedStateHandle.get<String>(KEY_LOOKUP_FEEDBACK)
+                            ?.let(ProductLookupFeedback::valueOf),
                 ),
             )
         val uiState: StateFlow<AddExactItemUiState> = mutableUiState.asStateFlow()
@@ -81,9 +84,25 @@ class AddExactItemViewModel
             }
         }
 
-        fun onBarcodeAssociated(barcode: String) {
+        fun onScannedProduct(
+            barcode: String,
+            suggestedName: String?,
+            feedback: ProductLookupFeedback,
+        ) {
+            if (savedStateHandle.get<Boolean>(KEY_SCAN_APPLIED) == true) return
+            savedStateHandle[KEY_SCAN_APPLIED] = true
             savedStateHandle[KEY_BARCODE] = barcode
-            mutableUiState.update { it.copy(barcode = barcode, duplicateBarcodeError = false) }
+            savedStateHandle[KEY_LOOKUP_FEEDBACK] = feedback.name
+            val name = suggestedName?.takeIf { mutableUiState.value.nameInput.isBlank() }
+            if (name != null) savedStateHandle[KEY_NAME] = name
+            mutableUiState.update {
+                it.copy(
+                    barcode = barcode,
+                    nameInput = name ?: it.nameInput,
+                    lookupFeedback = feedback,
+                    duplicateBarcodeError = false,
+                )
+            }
         }
 
         @Suppress("LongMethod")
@@ -178,5 +197,7 @@ class AddExactItemViewModel
             private const val KEY_UNIT = "unit"
             private const val KEY_BARCODE = "barcode"
             private const val KEY_TRACKING_MODE = "trackingMode"
+            private const val KEY_LOOKUP_FEEDBACK = "lookupFeedback"
+            private const val KEY_SCAN_APPLIED = "scanApplied"
         }
     }

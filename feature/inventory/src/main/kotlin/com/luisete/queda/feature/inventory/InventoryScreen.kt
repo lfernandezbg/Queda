@@ -2,6 +2,7 @@
 
 package com.luisete.queda.feature.inventory
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,12 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -285,7 +287,8 @@ private fun InventoryList(
             Modifier
                 .fillMaxSize()
                 .testTag(InventoryTestTags.INVENTORY_ITEM_LIST),
-        contentPadding = PaddingValues(bottom = QuedaSpacing.Medium),
+        contentPadding = PaddingValues(horizontal = QuedaSpacing.Medium, vertical = QuedaSpacing.Medium),
+        verticalArrangement = Arrangement.spacedBy(QuedaSpacing.Small),
     ) {
         item {
             InventorySummaryHeader(itemsCount = items.size)
@@ -298,11 +301,6 @@ private fun InventoryList(
             InventoryItemRow(
                 item = item,
                 onClick = { onItemClick(item) },
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = QuedaSpacing.Medium),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
             )
         }
     }
@@ -361,6 +359,8 @@ fun InventoryItemRow(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surface)
                 .clickable(
                     onClick = onClick,
                     role = Role.Button,

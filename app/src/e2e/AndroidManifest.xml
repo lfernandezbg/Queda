@@ -4,14 +4,27 @@
 
     <application
         android:allowBackup="false"
-        tools:replace="android:allowBackup">
+        android:enableOnBackInvokedCallback="true"
+        tools:replace="android:allowBackup,android:enableOnBackInvokedCallback">
+
+        <activity android:name=".MainActivity" tools:node="remove" />
+
+        <activity
+            android:name="com.luisete.queda.E2EShoppingActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTask" />
 
         <activity
             android:name=".E2ETestControlActivity"
-            android:excludeFromRecents="true"
             android:exported="true"
-            android:noHistory="true"
-            android:taskAffinity="${applicationId}.e2econtrol">
+            android:theme="@style/Theme.Queda"
+            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

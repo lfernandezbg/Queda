@@ -26,6 +26,78 @@ class MigrationTest {
 
     @Test
     @Throws(IOException::class)
+    fun migrate4To5_preservesInventoryAndCreatesShoppingTables() {
+        helper.createDatabase(testDb, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) VALUES ('p1', 'h1', 'Leche', 'leche', NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO stock_items " +
+                    "(id, householdId, productId, trackingMode, quantityAmount, quantityUnit, isPresent) " +
+                    "VALUES ('s1', 'h1', 'p1', 'EXACT', '2', 'UNIT', NULL)",
+            )
+        }
+        val db = helper.runMigrationsAndValidate(testDb, 5, true, QuedaDatabase.MIGRATION_4_5)
+        db.query("SELECT quantityAmount FROM stock_items WHERE id = 's1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("2", cursor.getString(0))
+        }
+        db.execSQL(
+            "INSERT INTO shopping_entries " +
+                "(id, householdId, displayName, normalizedName, purchased, createdAt) " +
+                "VALUES ('l1', 'h1', 'Pan', 'pan', 0, 1)",
+        )
+        assertThrows(SQLiteConstraintException::class.java) {
+            db.execSQL(
+                "INSERT INTO shopping_entries " +
+                    "(id, householdId, displayName, normalizedName, purchased, createdAt) " +
+                    "VALUES ('l2', 'h1', 'PAN', 'pan', 0, 2)",
+            )
+        }
+        db.query("SELECT COUNT(*) FROM pending_shopping_operations").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        db.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
+    fun migrate3To4_preservesItemsAndScopesBarcodesByHousehold() {
+        helper.createDatabase(testDb, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) " +
+                    "VALUES ('p1', 'local-household-v1', 'Leche', 'leche', '8412345678905')",
+            )
+            db.execSQL(
+                "INSERT INTO stock_items (id, householdId, productId, trackingMode, quantityAmount, quantityUnit, isPresent) " +
+                    "VALUES ('s1', 'local-household-v1', 'p1', 'EXACT', '2', 'LITER', NULL)",
+            )
+        }
+        val db = helper.runMigrationsAndValidate(testDb, 4, true, QuedaDatabase.MIGRATION_3_4)
+        db.query("SELECT quantityAmount FROM stock_items WHERE id = 's1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("2", cursor.getString(0))
+        }
+        db.execSQL(
+            "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) " +
+                "VALUES ('p2', 'another-home', 'Leche', 'leche', '8412345678905')",
+        )
+        assertThrows(SQLiteConstraintException::class.java) {
+            db.execSQL(
+                "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) " +
+                    "VALUES ('p3', 'local-household-v1', 'Otra', 'otra', '8412345678905')",
+            )
+        }
+        db.query("SELECT COUNT(*) FROM pending_sync_operations").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+        db.close()
+    }
+
+    @Test
+    @Throws(IOException::class)
     fun migrate1To2() {
         helper.createDatabase(testDb, 1).use { db ->
             db.execSQL(

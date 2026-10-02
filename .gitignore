@@ -10,6 +10,8 @@ build-logic/.gradle/
 
 # Local machine configuration
 local.properties
+app/google-services.json
+firebase-tests/node_modules/
 
 # Android generated outputs
 captures/

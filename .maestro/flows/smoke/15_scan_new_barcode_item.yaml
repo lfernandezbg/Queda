@@ -15,10 +15,12 @@ appId: com.luisete.queda.e2e
 
 - assertVisible: "Código de barras asociado: 4006381333931"
 
-- tapOn: "Nombre"
+- tapOn:
+    id: "add_exact_item_name_input"
 - inputText: "Stabilo"
 
-- tapOn: "Cantidad"
+- tapOn:
+    id: "add_exact_item_quantity_input"
 - inputText: "5"
 
 - hideKeyboard

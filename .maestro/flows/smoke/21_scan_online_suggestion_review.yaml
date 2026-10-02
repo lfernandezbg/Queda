@@ -1,0 +1,30 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+
+- extendedWaitUntil:
+    visible:
+        id: "inventory_empty_state"
+    timeout: 30000
+
+# The e2e-only catalog supplies this result without depending on the public API.
+- openLink: "queda-e2e://scan?barcode=3017620422003"
+
+- extendedWaitUntil:
+    visible: "Crema de cacao de prueba"
+    timeout: 30000
+
+- assertVisible: "Código de barras asociado: 3017620422003"
+- assertVisible: "Nombre sugerido por Open Food Facts. Revísalo, cámbialo si hace falta y guarda el alimento."
+
+- tapOn:
+    id: "add_item_mode_presence"
+
+- tapOn:
+    id: "add_exact_item_save_button"
+
+- extendedWaitUntil:
+    visible: "Crema de cacao de prueba"
+    timeout: 30000
+
+- assertVisible: "Hay"

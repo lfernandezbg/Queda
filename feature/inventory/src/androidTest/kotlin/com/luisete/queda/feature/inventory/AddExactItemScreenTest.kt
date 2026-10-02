@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextReplacement
 import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import org.junit.Assert.assertEquals
@@ -30,6 +31,34 @@ import org.junit.Test
 class AddExactItemScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun scannedSuggestionIsVisibleAndNameRemainsEditable() {
+        var editedName: String? = null
+        composeTestRule.setContent {
+            AddExactItemScreen(
+                uiState =
+                    AddExactItemUiState(
+                        nameInput = "Leche sugerida",
+                        barcode = "4006381333931",
+                        lookupFeedback = ProductLookupFeedback.FOUND,
+                    ),
+                onNameChange = { editedName = it },
+                onQuantityChange = {},
+                onUnitChange = {},
+                onTrackingModeChange = {},
+                onSave = {},
+                onCancel = {},
+            )
+        }
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_ITEM_LOOKUP_MESSAGE).assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            "Nombre sugerido por Open Food Facts. Revísalo, cámbialo si hace falta y guarda el alimento.",
+        ).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(InventoryTestTags.ADD_EXACT_ITEM_NAME_INPUT)
+            .performTextReplacement("Leche corregida")
+        assertEquals("Leche corregida", editedName)
+    }
 
     @Test
     fun screenShowsAllRequiredFieldsAndButtons() {
@@ -66,6 +95,7 @@ class AddExactItemScreenTest {
                 onCancel = {},
             )
         }
+        composeTestRule.waitForIdle()
         composeTestRule.waitUntil(5000) {
             composeTestRule.onAllNodes(isFocused()).fetchSemanticsNodes().isNotEmpty()
         }

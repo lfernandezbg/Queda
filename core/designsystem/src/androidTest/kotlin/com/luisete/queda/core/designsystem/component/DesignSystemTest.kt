@@ -33,6 +33,7 @@ class DesignSystemTest {
                 QuedaPrimaryButton(text = "Target", onClick = {})
             }
         }
+        composeTestRule.waitForIdle()
         val bounds = composeTestRule.onNodeWithText("Target").getUnclippedBoundsInRoot()
         val height = bounds.bottom - bounds.top
         assertTrue("Height $height < 48dp", height >= 48.dp)
@@ -46,6 +47,7 @@ class DesignSystemTest {
                 QuedaPrimaryButton(text = "Saving", onClick = { clicked = true }, loading = true)
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Saving").assertIsNotEnabled()
         composeTestRule.onNodeWithText("Saving").performClick()
         assertTrue("Click should not be invoked while loading", !clicked)
@@ -65,6 +67,7 @@ class DesignSystemTest {
                 )
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Error Message").assertIsDisplayed()
         composeTestRule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Error, "Error Message")).assertIsDisplayed()
     }
@@ -76,6 +79,7 @@ class DesignSystemTest {
                 QuedaStatusChip(label = "Info", color = androidx.compose.ui.graphics.Color.Red)
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Info").assertIsDisplayed()
         composeTestRule.onNodeWithText("Info").assert(hasClickAction().not())
     }
@@ -93,6 +97,7 @@ class DesignSystemTest {
                 )
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Failure").assertIsDisplayed()
         composeTestRule.onNodeWithText("Retry").performClick()
         assertTrue("Retry callback not invoked", retried)
@@ -105,6 +110,7 @@ class DesignSystemTest {
                 QuedaLoadingState(contentDescription = "Busy...")
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("Busy...").assertIsDisplayed()
     }
 
@@ -124,6 +130,7 @@ class DesignSystemTest {
                 }
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("sheet_tag", useUnmergedTree = true).assertIsDisplayed()
         composeTestRule.onNodeWithTag("tag_inside", useUnmergedTree = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("Inside Modal").assertIsDisplayed()
@@ -139,6 +146,7 @@ class DesignSystemTest {
                 }
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("Action").assertIsDisplayed()
         composeTestRule.onNodeWithText("Action").performClick()
         assertTrue("Bottom action should be clickable", clicked)

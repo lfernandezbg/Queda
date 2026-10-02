@@ -1,0 +1,8 @@
+<resources>
+    <string name="settings_title">Más</string>
+    <string name="settings_household">Tu hogar</string>
+    <string name="settings_invite">Invitar a alguien</string>
+    <string name="settings_sign_out">Cambiar de cuenta</string>
+    <string name="settings_invitation">Comparte este código (válido 7 días): %1$s</string>
+    <string name="settings_sync">Sincronización y red</string>
+</resources>

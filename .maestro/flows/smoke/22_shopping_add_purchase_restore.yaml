@@ -1,0 +1,28 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- openLink: "queda-e2e://shopping"
+- extendedWaitUntil:
+    visible:
+      id: "shopping_name"
+    timeout: 30000
+- tapOn:
+    id: "shopping_name"
+- inputText: "Pan"
+- hideKeyboard
+- tapOn:
+    id: "shopping_add"
+- extendedWaitUntil:
+    visible: "Pan"
+    timeout: 30000
+- assertVisible: "Pan"
+- tapOn: "Marcar Pan como comprado"
+- extendedWaitUntil:
+    visible: "Comprado · 1"
+    timeout: 30000
+- assertVisible: "Comprado · 1"
+- tapOn: "Devolver Pan a pendientes"
+- extendedWaitUntil:
+    visible: "Por comprar · 1"
+    timeout: 30000
+- assertVisible: "Por comprar · 1"

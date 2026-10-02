@@ -43,7 +43,7 @@ class OfflineInventoryRepositoryTest {
                 .allowMainThreadQueries()
                 .build()
         dao = db.inventoryDao()
-        repository = OfflineInventoryRepository(db, dao)
+        repository = OfflineInventoryRepository(db, dao, householdProvider = { householdId })
     }
 
     @After

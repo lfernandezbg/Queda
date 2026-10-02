@@ -38,6 +38,7 @@
     <string name="back">Volver</string>
 
     <string name="barcode_scanner_title">Escanear código</string>
+    <string name="barcode_scanner_looking_up">Buscando alimento…</string>
     <string name="barcode_scanner_permission_explanation">Se necesita permiso de cámara para escanear códigos de barras.</string>
     <string name="barcode_scanner_permission_retry">Reintentar</string>
     <string name="barcode_scanner_permission_permanently_denied">Has denegado el permiso de cámara permanentemente. Debes activarlo en los ajustes.</string>
@@ -47,6 +48,10 @@
     <string name="barcode_error_non_digit">El código debe contener solo números.</string>
     <string name="barcode_error_storage_failure">Error al buscar el producto. Inténtalo de nuevo.</string>
     <string name="add_exact_item_barcode_associated">Código de barras asociado: %1$s</string>
+    <string name="barcode_lookup_found_review">Nombre sugerido por Open Food Facts. Revísalo, cámbialo si hace falta y guarda el alimento.</string>
+    <string name="barcode_lookup_not_found">No aparece en Open Food Facts. Escribe el nombre y revisa los datos antes de guardar.</string>
+    <string name="barcode_lookup_missing_name">Open Food Facts no tiene un nombre útil para este código. Escríbelo antes de guardar.</string>
+    <string name="barcode_lookup_unavailable">No se pudo consultar Open Food Facts. Puedes escribir el nombre y guardar igualmente.</string>
     <string name="error_duplicate_barcode">Este código de barras ya está asociado a otro alimento.</string>
 
     <string name="error_name_blank">Introduce un nombre.</string>
@@ -88,4 +93,15 @@
     <string name="presence_status_current">Estado actual: %1$s</string>
     <string name="presence_status_switch_label">Hay / No hay</string>
     <string name="presence_action_error">No se ha podido cambiar el estado. Inténtalo de nuevo.</string>
+    <string name="scan_single">Uno a uno</string>
+    <string name="scan_continuous">Continuo</string>
+    <plurals name="scan_saved_count">
+        <item quantity="one">%1$d guardado en esta sesión</item>
+        <item quantity="other">%1$d guardados en esta sesión</item>
+    </plurals>
+    <string name="scan_review_title">Revisa y sigue</string>
+    <string name="scan_existing">%1$s ya está en casa. Indica cuánto añadir o márcalo como disponible.</string>
+    <string name="scan_save_continue">Guardar y seguir</string>
+    <string name="scan_skip">Saltar producto</string>
+    <string name="scan_save_error">Revisa nombre, cantidad y unidad; el alimento no se ha guardado.</string>
 </resources>

@@ -56,9 +56,11 @@ object InventoryTestTags {
     const val BARCODE_SCANNER_PERMISSION_PERMANENTLY_DENIED = "barcode_scanner_permission_permanently_denied"
     const val BARCODE_SCANNER_OPEN_SETTINGS_BUTTON = "barcode_scanner_open_settings_button"
     const val BARCODE_SCANNER_ERROR_MESSAGE = "barcode_scanner_error_message"
+    const val BARCODE_SCANNER_LOOKUP_PROGRESS = "barcode_scanner_lookup_progress"
 
     // Add Item Barcode
     const val ADD_EXACT_ITEM_BARCODE_INDICATOR = "add_exact_item_barcode_indicator"
+    const val ADD_ITEM_LOOKUP_MESSAGE = "add_item_lookup_message"
 
     // Simple Presence
     const val ADD_ITEM_MODE_EXACT = "add_item_mode_exact"

@@ -64,12 +64,18 @@ class FakeInventoryDao : InventoryDao {
         }
     }
 
-    override suspend fun getProductByBarcode(barcode: String): ProductEntity? {
-        return products.find { it.barcode == barcode }
+    override suspend fun getProductByBarcode(
+        householdId: String,
+        barcode: String,
+    ): ProductEntity? {
+        return products.find { it.householdId == householdId && it.barcode == barcode }
     }
 
-    override suspend fun getItemByBarcode(barcode: String): InventoryItemProjection? {
-        val product = products.find { it.barcode == barcode }
+    override suspend fun getItemByBarcode(
+        householdId: String,
+        barcode: String,
+    ): InventoryItemProjection? {
+        val product = products.find { it.householdId == householdId && it.barcode == barcode }
         val stock = if (product != null) stocks.find { it.productId == product.id } else null
 
         return if (product != null && stock != null) {

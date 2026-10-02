@@ -266,6 +266,23 @@ private fun AddExactItemForm(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.testTag(InventoryTestTags.ADD_EXACT_ITEM_BARCODE_INDICATOR),
         )
+        val reviewText =
+            when (uiState.lookupFeedback) {
+                ProductLookupFeedback.FOUND -> R.string.barcode_lookup_found_review
+                ProductLookupFeedback.NOT_FOUND -> R.string.barcode_lookup_not_found
+                ProductLookupFeedback.MISSING_NAME -> R.string.barcode_lookup_missing_name
+                ProductLookupFeedback.UNAVAILABLE -> R.string.barcode_lookup_unavailable
+                null -> null
+            }
+        if (reviewText != null) {
+            Spacer(modifier = Modifier.height(QuedaSpacing.Small))
+            Text(
+                text = stringResource(reviewText),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag(InventoryTestTags.ADD_ITEM_LOOKUP_MESSAGE),
+            )
+        }
     }
 
     Spacer(modifier = Modifier.height(QuedaSpacing.Medium))

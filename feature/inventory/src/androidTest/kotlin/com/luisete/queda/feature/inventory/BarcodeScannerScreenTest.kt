@@ -96,6 +96,28 @@ class BarcodeScannerScreenTest {
     }
 
     @Test
+    fun searchingProductShowsProgressWithoutHidingCamera() {
+        composeTestRule.setContent {
+            BarcodeScannerScreen(
+                uiState =
+                    BarcodeScannerUiState(
+                        permissionState = PermissionState.GRANTED,
+                        isProcessing = true,
+                    ),
+                onBack = {},
+                onRetryPermission = {},
+                onOpenSettings = {},
+                cameraPreviewSlot = {
+                    Box(Modifier.fillMaxSize().testTag(fakeCameraContentTag))
+                },
+            )
+        }
+        composeTestRule.onNodeWithTag(fakeCameraContentTag).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(InventoryTestTags.BARCODE_SCANNER_LOOKUP_PROGRESS).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Buscando alimento…").assertIsDisplayed()
+    }
+
+    @Test
     fun showsInvalidCheckDigitError() {
         composeTestRule.setContent {
             BarcodeScannerScreen(

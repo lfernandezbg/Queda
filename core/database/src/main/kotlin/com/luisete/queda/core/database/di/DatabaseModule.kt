@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.luisete.queda.core.database.InventoryDao
 import com.luisete.queda.core.database.QuedaDatabase
+import com.luisete.queda.core.database.ShoppingDao
+import com.luisete.queda.core.database.SyncDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,10 +29,18 @@ object DatabaseModule {
             .addMigrations(
                 QuedaDatabase.MIGRATION_1_2,
                 QuedaDatabase.MIGRATION_2_3,
+                QuedaDatabase.MIGRATION_3_4,
+                QuedaDatabase.MIGRATION_4_5,
             )
             .build()
 
     @Provides
     @Singleton
     fun provideInventoryDao(database: QuedaDatabase): InventoryDao = database.inventoryDao()
+
+    @Provides
+    fun provideSyncDao(database: QuedaDatabase): SyncDao = database.syncDao()
+
+    @Provides
+    fun provideShoppingDao(database: QuedaDatabase): ShoppingDao = database.shoppingDao()
 }
