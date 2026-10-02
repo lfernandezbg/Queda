@@ -21,7 +21,7 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 fun QuedaModalBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    sheetState: SheetState = rememberModalBottomSheetState(),
+    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     ModalBottomSheet(

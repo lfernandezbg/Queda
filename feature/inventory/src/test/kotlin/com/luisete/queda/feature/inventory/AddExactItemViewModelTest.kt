@@ -275,4 +275,37 @@ class AddExactItemViewModelTest {
             assertEquals(1, results.size)
             job.cancel()
         }
+
+    @Test
+    fun scannedNameIsPrefilledButCanBeEditedBeforeSaving() =
+        runTest(testDispatcher) {
+            val viewModel = AddExactItemViewModel(useCase, SavedStateHandle())
+            viewModel.onScannedProduct("4006381333931", "Leche sugerida", ProductLookupFeedback.FOUND)
+            assertEquals("Leche sugerida", viewModel.uiState.value.nameInput)
+            assertEquals(ProductLookupFeedback.FOUND, viewModel.uiState.value.lookupFeedback)
+            assertEquals(0, repository.addCallsCount)
+
+            viewModel.onNameChange("Leche de casa")
+            viewModel.onScannedProduct("4006381333931", "Leche sugerida", ProductLookupFeedback.FOUND)
+            assertEquals("Leche de casa", viewModel.uiState.value.nameInput)
+            viewModel.onQuantityChange("1")
+            viewModel.save()
+            advanceUntilIdle()
+            assertEquals(1, repository.addCallsCount)
+        }
+
+    @Test
+    fun scannedPrefillRestoresWithoutReplacingManualEdit() =
+        runTest(testDispatcher) {
+            val handle = SavedStateHandle()
+            val initial = AddExactItemViewModel(useCase, handle)
+            initial.onScannedProduct("4006381333931", "Leche sugerida", ProductLookupFeedback.FOUND)
+            initial.onNameChange("Leche editada")
+
+            val recreated = AddExactItemViewModel(useCase, handle)
+            recreated.onScannedProduct("4006381333931", "Leche sugerida", ProductLookupFeedback.FOUND)
+            assertEquals("Leche editada", recreated.uiState.value.nameInput)
+            assertEquals("4006381333931", recreated.uiState.value.barcode)
+            assertEquals(ProductLookupFeedback.FOUND, recreated.uiState.value.lookupFeedback)
+        }
 }

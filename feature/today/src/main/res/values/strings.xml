@@ -1,0 +1,9 @@
+<resources>
+    <string name="today_title">Hoy</string>
+    <string name="today_hero">Todo en orden. ¿Qué falta?</string>
+    <string name="today_shopping_count">%1$d por comprar</string>
+    <string name="today_inventory_count">%1$d alimentos en casa</string>
+    <string name="today_open_shopping">Abrir la lista</string>
+    <string name="today_open_inventory">Ver inventario</string>
+    <string name="today_at_home">En casa</string>
+</resources>

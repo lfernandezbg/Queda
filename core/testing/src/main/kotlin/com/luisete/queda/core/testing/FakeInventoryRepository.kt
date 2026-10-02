@@ -40,6 +40,8 @@ class FakeInventoryRepository : InventoryRepository {
         Collections.synchronizedList(mutableListOf())
     val correctedExactQuantities: MutableList<Pair<StockItemId, ExactQuantity>> =
         Collections.synchronizedList(mutableListOf())
+    val increasedExactQuantities: MutableList<Pair<StockItemId, ExactQuantity>> =
+        Collections.synchronizedList(mutableListOf())
 
     val findItemByBarcodeCalls: MutableList<Barcode> = Collections.synchronizedList(mutableListOf())
 
@@ -107,6 +109,15 @@ class FakeInventoryRepository : InventoryRepository {
     ): QuantityMutationResult {
         nextMutationDeferred?.await()
         consumedExactQuantities.add(stockItemId to toConsume)
+        return mutationResult ?: QuantityMutationResult.Failure(DomainError.StorageFailure)
+    }
+
+    override suspend fun addExactQuantity(
+        stockItemId: StockItemId,
+        quantity: ExactQuantity,
+    ): QuantityMutationResult {
+        nextMutationDeferred?.await()
+        increasedExactQuantities.add(stockItemId to quantity)
         return mutationResult ?: QuantityMutationResult.Failure(DomainError.StorageFailure)
     }
 

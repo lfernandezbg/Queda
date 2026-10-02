@@ -6,6 +6,7 @@ appId: com.luisete.queda.e2e
 - tapOn:
     id: "add_exact_item_name_input"
 - inputText: "Salt"
+- hideKeyboard
 - tapOn:
     id: "add_item_mode_presence"
 - tapOn:

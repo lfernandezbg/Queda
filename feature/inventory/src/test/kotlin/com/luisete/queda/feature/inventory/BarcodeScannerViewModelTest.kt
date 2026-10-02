@@ -1,7 +1,10 @@
 package com.luisete.queda.feature.inventory
 
+import com.luisete.queda.core.domain.inventory.ExternalProductLookup
+import com.luisete.queda.core.domain.inventory.ExternalProductResult
 import com.luisete.queda.core.domain.inventory.FindItemByBarcodeResult
 import com.luisete.queda.core.domain.inventory.ResolveScannedBarcodeUseCase
+import com.luisete.queda.core.model.barcode.Barcode
 import com.luisete.queda.core.testing.FakeInventoryRepository
 import com.luisete.queda.core.testing.InventoryTestData
 import kotlinx.coroutines.Dispatchers
@@ -25,13 +28,14 @@ import org.junit.Test
 class BarcodeScannerViewModelTest {
     private val repository = FakeInventoryRepository()
     private val resolveScannedBarcodeUseCase = ResolveScannedBarcodeUseCase(repository)
+    private val externalLookup = FakeExternalProductLookup()
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: BarcodeScannerViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = BarcodeScannerViewModel(resolveScannedBarcodeUseCase)
+        viewModel = BarcodeScannerViewModel(resolveScannedBarcodeUseCase, externalLookup)
     }
 
     @After
@@ -49,6 +53,8 @@ class BarcodeScannerViewModelTest {
             val event = viewModel.navigationEvents.first()
             assertTrue(event is BarcodeScannerNavigationEvent.ToAddItem)
             assertEquals(barcode, (event as BarcodeScannerNavigationEvent.ToAddItem).barcode)
+            assertEquals(ProductLookupFeedback.NOT_FOUND, event.lookupFeedback)
+            assertEquals(1, externalLookup.calls)
             assertTrue(viewModel.uiState.value.isProcessing)
 
             // Repeated detections while processing are ignored
@@ -102,6 +108,56 @@ class BarcodeScannerViewModelTest {
             val event = viewModel.navigationEvents.first()
             assertTrue(event is BarcodeScannerNavigationEvent.ToInventoryWithItem)
             assertEquals(item.stockItem.id.value, (event as BarcodeScannerNavigationEvent.ToInventoryWithItem).itemId)
+            assertEquals(0, externalLookup.calls)
+        }
+
+    @Test
+    fun `online name is forwarded for review and never saved by scanner`() =
+        runTest {
+            externalLookup.result = ExternalProductResult.Found("Leche entera")
+            viewModel.onBarcodeDetected("4006381333931")
+            advanceUntilIdle()
+
+            val event = viewModel.navigationEvents.first() as BarcodeScannerNavigationEvent.ToAddItem
+            assertEquals("Leche entera", event.suggestedName)
+            assertEquals(ProductLookupFeedback.FOUND, event.lookupFeedback)
+            assertEquals(0, repository.addCallsCount)
+        }
+
+    @Test
+    fun `network failure still allows manual entry with barcode`() =
+        runTest {
+            externalLookup.result = ExternalProductResult.Unavailable
+            viewModel.onBarcodeDetected("4006381333931")
+            advanceUntilIdle()
+
+            val event = viewModel.navigationEvents.first() as BarcodeScannerNavigationEvent.ToAddItem
+            assertEquals("4006381333931", event.barcode)
+            assertEquals(null, event.suggestedName)
+            assertEquals(ProductLookupFeedback.UNAVAILABLE, event.lookupFeedback)
+        }
+
+    @Test
+    fun `continuous review ignores the packet still in frame then accepts another`() =
+        runTest {
+            val first = "4006381333931"
+            val second = "73513537"
+            viewModel.setContinuousMode(true)
+            viewModel.onBarcodeDetected(first)
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.pendingScan is PendingScan.New)
+            assertEquals(1, externalLookup.calls)
+
+            viewModel.resume()
+            viewModel.onBarcodeDetected(first)
+            advanceUntilIdle()
+            assertEquals(null, viewModel.uiState.value.pendingScan)
+            assertEquals(1, externalLookup.calls)
+
+            viewModel.onBarcodeDetected(second)
+            advanceUntilIdle()
+            assertEquals(second, (viewModel.uiState.value.pendingScan as PendingScan.New).barcode)
+            assertEquals(2, externalLookup.calls)
         }
 
     @Test
@@ -113,6 +169,7 @@ class BarcodeScannerViewModelTest {
 
             assertEquals(BarcodeScannerError.INVALID_CHECK_DIGIT, viewModel.uiState.value.lastError)
             assertFalse(viewModel.uiState.value.isProcessing)
+            assertEquals(0, externalLookup.calls)
 
             // Subsequent valid barcode works
             val validBarcode = "4006381333931"
@@ -150,5 +207,15 @@ class BarcodeScannerViewModelTest {
     fun `initial state is correct`() {
         assertEquals(PermissionState.NOT_REQUESTED, viewModel.uiState.value.permissionState)
         assertFalse(viewModel.uiState.value.isProcessing)
+    }
+
+    private class FakeExternalProductLookup : ExternalProductLookup {
+        var result: ExternalProductResult = ExternalProductResult.NotFound
+        var calls: Int = 0
+
+        override suspend fun findByBarcode(barcode: Barcode): ExternalProductResult {
+            calls++
+            return result
+        }
     }
 }

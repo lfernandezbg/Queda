@@ -46,8 +46,11 @@ interface InventoryDao {
         normalizedName: String,
     ): Int
 
-    @Query("SELECT * FROM products WHERE barcode = :barcode")
-    suspend fun getProductByBarcode(barcode: String): ProductEntity?
+    @Query("SELECT * FROM products WHERE householdId = :householdId AND barcode = :barcode")
+    suspend fun getProductByBarcode(
+        householdId: String,
+        barcode: String,
+    ): ProductEntity?
 
     @Transaction
     @Query(
@@ -69,11 +72,14 @@ interface InventoryDao {
         INNER JOIN stock_items AS s
             ON s.productId = p.id
             AND s.householdId = p.householdId
-        WHERE p.barcode = :barcode
+        WHERE p.householdId = :householdId AND s.householdId = :householdId AND p.barcode = :barcode
         LIMIT 1
         """,
     )
-    suspend fun getItemByBarcode(barcode: String): InventoryItemProjection?
+    suspend fun getItemByBarcode(
+        householdId: String,
+        barcode: String,
+    ): InventoryItemProjection?
 
     @Insert
     suspend fun insertProduct(product: ProductEntity)
@@ -110,7 +116,7 @@ interface InventoryDao {
             return AddExactInventoryItemDbResult.DuplicateProductName
         }
 
-        if (product.barcode != null && getProductByBarcode(product.barcode) != null) {
+        if (product.barcode != null && getProductByBarcode(product.householdId, product.barcode) != null) {
             return AddExactInventoryItemDbResult.DuplicateBarcode
         }
 
@@ -120,7 +126,7 @@ interface InventoryDao {
             if (countProductsWithName(product.householdId, product.normalizedName) > 0) {
                 return AddExactInventoryItemDbResult.DuplicateProductName
             }
-            if (product.barcode != null && getProductByBarcode(product.barcode) != null) {
+            if (product.barcode != null && getProductByBarcode(product.householdId, product.barcode) != null) {
                 return AddExactInventoryItemDbResult.DuplicateBarcode
             }
             throw e

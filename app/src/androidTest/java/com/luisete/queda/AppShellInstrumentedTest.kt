@@ -1,7 +1,9 @@
 package com.luisete.queda
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -11,8 +13,12 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.luisete.queda.core.database.QuedaDatabase
 import com.luisete.queda.feature.inventory.InventoryTestTags
+import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import dagger.hilt.android.testing.UninstallModules
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -20,8 +26,17 @@ import org.junit.runner.RunWith
 import javax.inject.Inject
 
 @HiltAndroidTest
+@UninstallModules(AppRootPresenterModule::class)
 @RunWith(AndroidJUnit4::class)
 class AppShellInstrumentedTest {
+    @BindValue @JvmField
+    val rootPresenter: AppRootPresenter =
+        object : AppRootPresenter {
+            @Composable override fun Render() {
+                QuedaAppRoot()
+            }
+        }
+
     @get:Rule(order = 0)
     var hiltRule = HiltAndroidRule(this)
 
@@ -34,12 +49,8 @@ class AppShellInstrumentedTest {
     @Before
     fun resetState() {
         hiltRule.inject()
-        // Execute clearAllTables off the main thread
-        database.clearAllTables()
-
-        // Recreate activity to ensure UI reflects cleared state
-        composeTestRule.activityRule.scenario.onActivity { activity ->
-            activity.recreate()
+        runBlocking(Dispatchers.IO) {
+            database.clearAllTables()
         }
 
         // Wait until Inventory exposes its deterministic empty/add state
@@ -96,7 +107,7 @@ class AppShellInstrumentedTest {
 
         // 3. Wait for exact starting quantity
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
-            composeTestRule.onAllNodes(hasText(itemName)).fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onNodeWithText("10 ud").isDisplayed()
         }
         composeTestRule.onNodeWithText("10 ud").assertIsDisplayed()
 

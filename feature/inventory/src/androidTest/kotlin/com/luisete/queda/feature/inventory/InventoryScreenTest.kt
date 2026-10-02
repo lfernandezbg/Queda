@@ -246,6 +246,7 @@ class InventoryScreenTest {
                 onTogglePresence = {},
             )
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("La cantidad a consumir debe ser menor que la actual.").assertIsDisplayed()
     }
 
@@ -277,6 +278,7 @@ class InventoryScreenTest {
                 onTogglePresence = {},
             )
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag(InventoryTestTags.QUANTITY_ACTION_CONFIRM).assertIsNotEnabled()
         composeTestRule.onNodeWithTag(InventoryTestTags.QUANTITY_ACTION_CANCEL).assertIsNotEnabled()
         composeTestRule.onNodeWithTag(InventoryTestTags.QUANTITY_ACTION_INPUT).assertIsNotEnabled()
@@ -457,6 +459,7 @@ class InventoryScreenTest {
                 onTogglePresence = {},
             )
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag(InventoryTestTags.PRESENCE_ACTION_SHEET).assertIsDisplayed()
         composeTestRule.onNode(
             hasText("Salt") and hasAnyAncestor(hasTestTag(InventoryTestTags.PRESENCE_ACTION_SHEET)),

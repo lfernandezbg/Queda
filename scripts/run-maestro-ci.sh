@@ -70,6 +70,9 @@ cleanup() {
     timeout 15s adb -s "$SERIAL" shell dumpsys package com.luisete.queda.e2e > "$OUTPUT_DIR/dumpsys_package.txt" 2>&1 || true
     timeout 15s adb -s "$SERIAL" shell uiautomator dump "/sdcard/final_dump.xml" > /dev/null 2>&1 || true
     timeout 15s adb -s "$SERIAL" pull "/sdcard/final_dump.xml" "$OUTPUT_DIR/final_ui_dump.xml" 2>/dev/null || true
+
+    # Work around android-emulator-runner shutdown hanging on crashpad_handler.
+    killall -INT crashpad_handler 2>/dev/null || true
 }
 trap cleanup EXIT
 

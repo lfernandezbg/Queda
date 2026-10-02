@@ -22,6 +22,11 @@ interface InventoryRepository {
         toConsume: ExactQuantity,
     ): QuantityMutationResult
 
+    suspend fun addExactQuantity(
+        stockItemId: StockItemId,
+        quantity: ExactQuantity,
+    ): QuantityMutationResult
+
     suspend fun correctExactQuantity(
         stockItemId: StockItemId,
         newQuantity: ExactQuantity,

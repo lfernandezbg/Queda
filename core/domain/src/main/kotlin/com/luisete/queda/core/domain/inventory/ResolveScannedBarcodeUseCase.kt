@@ -14,7 +14,11 @@ class ResolveScannedBarcodeUseCase
                 is BarcodeCreationResult.Success -> {
                     when (val findResult = repository.findItemByBarcode(barcodeResult.barcode)) {
                         is FindItemByBarcodeResult.Found ->
-                            ResolveScannedBarcodeResult.ExistingItem(findResult.item.stockItem.id)
+                            ResolveScannedBarcodeResult.ExistingItem(
+                                findResult.item.stockItem.id,
+                                findResult.item.product.name.displayValue,
+                                findResult.item.stockItem.quantity,
+                            )
 
                         FindItemByBarcodeResult.NotFound ->
                             ResolveScannedBarcodeResult.NewBarcode(barcodeResult.barcode)

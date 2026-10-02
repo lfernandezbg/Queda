@@ -1,0 +1,15 @@
+<resources>
+    <string name="shopping_title">Compra</string>
+    <string name="shopping_shared">Lista compartida con tu hogar</string>
+    <string name="shopping_add_hint">¿Qué hay que comprar?</string>
+    <string name="shopping_add">Añadir a la lista</string>
+    <string name="shopping_pending">Por comprar · %1$d</string>
+    <string name="shopping_purchased">Comprado · %1$d</string>
+    <string name="shopping_empty">La lista está al día</string>
+    <string name="shopping_empty_body">Añade lo que falte en casa para que todos lo vean.</string>
+    <string name="shopping_already_exists">Este alimento ya está en la lista.</string>
+    <string name="shopping_invalid_name">Escribe un nombre válido de hasta 80 caracteres.</string>
+    <string name="shopping_save_error">No se pudo guardar. Inténtalo de nuevo.</string>
+    <string name="shopping_mark_purchased">Marcar %1$s como comprado</string>
+    <string name="shopping_mark_pending">Devolver %1$s a pendientes</string>
+</resources>

@@ -1,4 +1,35 @@
 <resources>
     <string name="app_name">Queda</string>
+    <string name="nav_today">Hoy</string>
+    <string name="nav_inventory">Inventario</string>
+    <string name="nav_scan">Escanear</string>
+    <string name="nav_shopping">Compra</string>
+    <string name="nav_settings">Más</string>
     <string name="foundation_message">Tu inventario, siempre a mano</string>
+    <string name="household_loading">Cargando tu hogar…</string>
+    <string name="household_loading_failed">No se pudo cargar el hogar. Inténtalo de nuevo cuando haya conexión.</string>
+    <string name="household_welcome">Entra en Queda</string>
+    <string name="household_email">Correo electrónico</string>
+    <string name="household_password">Contraseña</string>
+    <string name="household_sign_in">Entrar</string>
+    <string name="household_register">Crear cuenta</string>
+    <string name="household_choose">Tu hogar compartido</string>
+    <string name="household_name">Nombre del hogar</string>
+    <string name="household_create">Crear hogar</string>
+    <string name="household_join_explanation">Para entrar en otro hogar, pide su código de invitación.</string>
+    <string name="household_code">Código de invitación</string>
+    <string name="household_join">Unirme al hogar</string>
+    <string name="household_invite">Invitar</string>
+    <string name="household_sign_out">Salir</string>
+    <string name="household_invitation_code">Comparte este código (válido 7 días): %1$s</string>
+    <string name="sync_updated">Actualizado</string>
+    <string name="sync_pending">Pendiente de sincronizar</string>
+    <string name="sync_offline">Sin conexión</string>
+    <string name="sync_error">Error de sincronización</string>
+    <string name="sync_refresh">Actualizar</string>
+    <string name="sync_resolve">Resolver conflicto</string>
+    <string name="sync_conflict_title">Cambios pendientes incompatibles</string>
+    <string name="sync_conflict_body">Otro dispositivo cambió este alimento o ya existe uno con el mismo nombre o código. Conservar la versión del hogar descarta tus cambios pendientes y, si este alimento aún no se añadió al hogar, elimina tu copia local.</string>
+    <string name="sync_keep_remote">Conservar versión del hogar</string>
+    <string name="sync_cancel">Cancelar</string>
 </resources>

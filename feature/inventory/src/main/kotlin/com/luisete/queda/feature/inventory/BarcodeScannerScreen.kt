@@ -1,4 +1,11 @@
-@file:Suppress("ktlint:standard:function-naming", "detekt:FunctionNaming")
+@file:Suppress(
+    "ktlint:standard:function-naming",
+    "detekt:FunctionNaming",
+    "detekt:LongParameterList",
+    "detekt:LongMethod",
+    "detekt:CyclomaticComplexMethod",
+    "detekt:MaxLineLength",
+)
 
 package com.luisete.queda.feature.inventory
 
@@ -18,6 +25,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,8 +33,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -41,7 +54,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
@@ -56,6 +72,7 @@ import com.luisete.queda.core.designsystem.component.QuedaPrimaryButton
 import com.luisete.queda.core.designsystem.component.QuedaScaffold
 import com.luisete.queda.core.designsystem.component.QuedaTopAppBar
 import com.luisete.queda.core.designsystem.theme.QuedaSpacing
+import com.luisete.queda.core.model.quantity.MeasurementUnit
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -66,17 +83,25 @@ import java.util.concurrent.atomic.AtomicBoolean
 fun BarcodeScannerRoute(
     viewModel: BarcodeScannerViewModel,
     onBack: () -> Unit,
-    onNavigateToAddItem: (String) -> Unit,
+    onNavigateToAddItem: (BarcodeScannerNavigationEvent.ToAddItem) -> Unit,
     onNavigateToInventoryWithItem: (String) -> Unit,
+    continuousSession: ContinuousScanViewModel? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var hadPreviousCompletedRequest by rememberSaveable { mutableStateOf(false) }
+    val savedCount = continuousSession?.savedCount?.collectAsStateWithLifecycle()?.value ?: 0
+    val saveError = continuousSession?.error?.collectAsStateWithLifecycle()?.value ?: false
+    val isSaving = continuousSession?.saving?.collectAsStateWithLifecycle()?.value ?: false
+
+    LaunchedEffect(continuousSession) {
+        continuousSession?.savedEvents?.collect { viewModel.resume() }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.navigationEvents.collect { event ->
             when (event) {
-                is BarcodeScannerNavigationEvent.ToAddItem -> onNavigateToAddItem(event.barcode)
+                is BarcodeScannerNavigationEvent.ToAddItem -> onNavigateToAddItem(event)
                 is BarcodeScannerNavigationEvent.ToInventoryWithItem -> {
                     onNavigateToInventoryWithItem(event.itemId)
                 }
@@ -145,6 +170,13 @@ fun BarcodeScannerRoute(
     BarcodeScannerScreen(
         uiState = uiState,
         onBack = onBack,
+        continuousAvailable = continuousSession != null,
+        savedCount = savedCount,
+        saveError = saveError,
+        isSaving = isSaving,
+        onModeChange = viewModel::setContinuousMode,
+        onSkip = viewModel::resume,
+        onSave = { pending, name, quantity, unit -> continuousSession?.save(pending, name, quantity, unit) },
         onRetryPermission = requestPermission,
         onOpenSettings = {
             val intent =
@@ -183,6 +215,13 @@ fun BarcodeScannerScreen(
     onRetryPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     cameraPreviewSlot: @Composable () -> Unit,
+    continuousAvailable: Boolean = false,
+    savedCount: Int = 0,
+    saveError: Boolean = false,
+    isSaving: Boolean = false,
+    onModeChange: (Boolean) -> Unit = {},
+    onSkip: () -> Unit = {},
+    onSave: (PendingScan, String, String, MeasurementUnit) -> Unit = { _, _, _, _ -> },
 ) {
     QuedaScaffold(
         modifier = Modifier.testTag(InventoryTestTags.BARCODE_SCANNER_SCREEN),
@@ -202,6 +241,93 @@ fun BarcodeScannerScreen(
                 onOpenSettings = onOpenSettings,
                 cameraPreviewSlot = cameraPreviewSlot,
             )
+            if (uiState.permissionState == PermissionState.GRANTED && continuousAvailable) {
+                Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(QuedaSpacing.Medium)) {
+                    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(QuedaSpacing.Small)) {
+                        OutlinedButton(onClick = { onModeChange(false) }, enabled = uiState.continuousMode) {
+                            Text(stringResource(R.string.scan_single))
+                        }
+                        OutlinedButton(onClick = { onModeChange(true) }, enabled = !uiState.continuousMode) {
+                            Text(stringResource(R.string.scan_continuous))
+                        }
+                    }
+                    if (uiState.continuousMode) Text(pluralStringResource(R.plurals.scan_saved_count, savedCount, savedCount))
+                }
+                uiState.pendingScan?.let { pending ->
+                    ContinuousReview(pending, saveError, isSaving, onSave, onSkip)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContinuousReview(
+    pending: PendingScan,
+    error: Boolean,
+    isSaving: Boolean,
+    onSave: (PendingScan, String, String, MeasurementUnit) -> Unit,
+    onSkip: () -> Unit,
+) {
+    var name by remember(pending) { mutableStateOf((pending as? PendingScan.New)?.suggestedName.orEmpty()) }
+    var amount by remember(pending) { mutableStateOf("1") }
+    var unit by remember(pending) { mutableStateOf(MeasurementUnit.UNIT) }
+    ModalBottomSheet(onDismissRequest = { if (!isSaving) onSkip() }, modifier = Modifier.testTag("continuous_scan_review")) {
+        Column(Modifier.fillMaxWidth().semantics { testTagsAsResourceId = true }.padding(QuedaSpacing.Large)) {
+            Text(stringResource(R.string.scan_review_title), style = MaterialTheme.typography.headlineSmall)
+            if (pending is PendingScan.New) {
+                Text(stringResource(R.string.add_exact_item_barcode_associated, pending.barcode))
+                OutlinedTextField(name, {
+                    name = it
+                }, label = {
+                    Text(
+                        stringResource(R.string.add_exact_item_name_label),
+                    )
+                }, modifier = Modifier.fillMaxWidth().testTag("continuous_scan_name"))
+            } else if (pending is PendingScan.Existing) {
+                Text(stringResource(R.string.scan_existing, pending.name))
+            }
+            if (pending !is PendingScan.Existing || !pending.isPresence) {
+                OutlinedTextField(amount, {
+                    amount = it
+                }, label = {
+                    Text(
+                        stringResource(R.string.quantity_amount_label),
+                    )
+                }, modifier = Modifier.fillMaxWidth().testTag("continuous_scan_quantity"))
+                Row {
+                    listOf(
+                        MeasurementUnit.UNIT,
+                        MeasurementUnit.GRAM,
+                        MeasurementUnit.KILOGRAM,
+                        MeasurementUnit.MILLILITER,
+                        MeasurementUnit.LITER,
+                    ).forEach {
+                            option ->
+                        val label =
+                            when (option) {
+                                MeasurementUnit.UNIT -> R.string.unit_abbreviation_unit
+                                MeasurementUnit.GRAM -> R.string.unit_abbreviation_gram
+                                MeasurementUnit.KILOGRAM -> R.string.unit_abbreviation_kilogram
+                                MeasurementUnit.MILLILITER -> R.string.unit_abbreviation_milliliter
+                                MeasurementUnit.LITER -> R.string.unit_abbreviation_liter
+                            }
+                        OutlinedButton(onClick = { unit = option }, enabled = unit != option) { Text(stringResource(label)) }
+                    }
+                }
+            }
+            if (error) Text(stringResource(R.string.scan_save_error), color = MaterialTheme.colorScheme.error)
+            Button(onClick = {
+                onSave(pending, name, amount, unit)
+            }, enabled = !isSaving, modifier = Modifier.fillMaxWidth().testTag("continuous_scan_save")) {
+                Text(stringResource(R.string.scan_save_continue))
+            }
+            OutlinedButton(
+                onClick = onSkip,
+                enabled = !isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.scan_skip)) }
         }
     }
 }
@@ -232,6 +358,22 @@ private fun ScannerContent(
         when (uiState.permissionState) {
             PermissionState.GRANTED -> {
                 cameraPreviewSlot()
+
+                if (uiState.isProcessing) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.testTag(InventoryTestTags.BARCODE_SCANNER_LOOKUP_PROGRESS),
+                        )
+                        Spacer(modifier = Modifier.height(QuedaSpacing.Small))
+                        Text(
+                            text = stringResource(R.string.barcode_scanner_looking_up),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
 
                 uiState.lastError?.let { error ->
                     ErrorMessage(

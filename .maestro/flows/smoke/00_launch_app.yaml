@@ -1,10 +1,6 @@
 appId: com.luisete.queda.e2e
 ---
-- clearState
-- launchApp
-- tapOn:
-    text: "Wait"
-    optional: true
+- openLink: "queda-e2e://reset"
 - extendedWaitUntil:
     visible:
         id: "inventory_screen"

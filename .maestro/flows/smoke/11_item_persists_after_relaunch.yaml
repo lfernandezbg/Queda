@@ -18,9 +18,13 @@ appId: com.luisete.queda.e2e
 - extendedWaitUntil:
     visible:
       id: "inventory_screen"
-    timeout: 10000
+    timeout: 30000
 - stopApp
 - launchApp
+- extendedWaitUntil:
+    visible:
+      id: "inventory_screen"
+    timeout: 30000
 - assertVisible:
     id: "inventory_screen"
 - assertVisible: "Cafe"

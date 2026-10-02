@@ -40,6 +40,36 @@ class InventoryDaoTest {
         }
 
     @Test
+    fun sameBarcodeInSeparateHouseholdsIsAllowedAndLookupIsIsolated() =
+        runTest {
+            dao.insertProduct(ProductEntity("p1", "home-a", "Leche", "leche", "8412345678905"))
+            dao.insertStockItem(StockItemEntity("s1", "home-a", "p1", "EXACT", "1", "LITER", null))
+            dao.insertProduct(ProductEntity("p2", "home-b", "Leche", "leche", "8412345678905"))
+            dao.insertStockItem(StockItemEntity("s2", "home-b", "p2", "PRESENCE", null, null, true))
+
+            assertEquals("s1", dao.getItemByBarcode("home-a", "8412345678905")?.stockItemId)
+            assertEquals("s2", dao.getItemByBarcode("home-b", "8412345678905")?.stockItemId)
+            assertNull(dao.getItemByBarcode("home-c", "8412345678905"))
+        }
+
+    @Test
+    fun importingLegacyItemMovesItAndQueuesExactPayload() =
+        runTest {
+            dao.insertProduct(ProductEntity("p1", "local-household-v1", "Leche", "leche", "8412345678905"))
+            dao.insertStockItem(StockItemEntity("s1", "local-household-v1", "p1", "EXACT", "1.5", "LITER", null))
+
+            db.syncDao().importLegacy("shared-home")
+
+            assertTrue(dao.observeExactInventoryItems("local-household-v1").first().isEmpty())
+            assertEquals("1.5", dao.observeExactInventoryItems("shared-home").first().single().quantityAmount)
+            val pending = db.syncDao().pending("shared-home").single()
+            assertEquals("ADD", pending.action)
+            assertTrue(pending.payload.contains("\"quantityAmount\":\"1.5\""))
+            db.syncDao().importLegacy("shared-home")
+            assertEquals(1, db.syncDao().pending("shared-home").size)
+        }
+
+    @Test
     fun insertedProductAndStockAreObserved() =
         runTest {
             val product = ProductEntity("p1", "h1", "Milk", "milk")

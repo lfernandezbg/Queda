@@ -9,6 +9,7 @@ data class AddExactItemUiState(
     val selectedUnit: MeasurementUnit = MeasurementUnit.UNIT,
     val trackingMode: StockTrackingMode = StockTrackingMode.EXACT,
     val barcode: String? = null,
+    val lookupFeedback: ProductLookupFeedback? = null,
     val nameError: NameInputError? = null,
     val quantityError: QuantityInputError? = null,
     val duplicateError: Boolean = false,
