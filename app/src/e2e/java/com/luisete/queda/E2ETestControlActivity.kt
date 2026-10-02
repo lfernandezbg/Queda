@@ -149,7 +149,12 @@ class E2ETestControlActivity : ComponentActivity() {
                                 val command = E2ECommandParser.parse(intent.dataString) as? E2ECommand.Scan
                                 if (command != null) {
                                     androidx.compose.runtime.key(scanId) {
-                                        E2EScanHost(command.barcode, resolveScannedBarcodeUseCase, onExit = { currentScreen.value = "app" })
+                                        E2EScanHost(
+                                            command.barcode,
+                                            resolveScannedBarcodeUseCase,
+                                            onExit = { currentScreen.value = "app" },
+                                            scanSessionId = scanId,
+                                        )
                                     }
                                 } else {
                                     QuedaAppRoot()
@@ -250,13 +255,14 @@ fun E2EScanHost(
     resolver: ResolveScannedBarcodeUseCase,
     onExit: () -> Unit,
     continuous: Boolean = false,
+    scanSessionId: Int = 0,
 ) {
     var currentScreen by remember { mutableStateOf<E2EScreen>(E2EScreen.Scanner(initialBarcode)) }
 
     when (val screen = currentScreen) {
         is E2EScreen.Scanner -> {
             val factory = remember(resolver) { E2EBarcodeScannerFactory(resolver) }
-            val viewModel: BarcodeScannerViewModel = viewModel(key = "e2e_scanner_${screen.barcode}", factory = factory)
+            val viewModel: BarcodeScannerViewModel = viewModel(key = "e2e_scanner_${scanSessionId}_${screen.barcode}", factory = factory)
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val session = if (continuous) hiltViewModel<ContinuousScanViewModel>() else null
             val savedCount = session?.savedCount?.collectAsStateWithLifecycle()?.value ?: 0
