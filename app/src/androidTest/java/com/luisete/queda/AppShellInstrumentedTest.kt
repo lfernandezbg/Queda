@@ -3,6 +3,7 @@ package com.luisete.queda
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -106,7 +107,7 @@ class AppShellInstrumentedTest {
 
         // 3. Wait for exact starting quantity
         composeTestRule.waitUntil(timeoutMillis = 10_000) {
-            composeTestRule.onAllNodes(hasText(itemName)).fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onNodeWithText("10 ud").isDisplayed()
         }
         composeTestRule.onNodeWithText("10 ud").assertIsDisplayed()
 
