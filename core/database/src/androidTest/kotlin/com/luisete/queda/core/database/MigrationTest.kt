@@ -15,7 +15,6 @@ import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
-    private val testDb = "migration-test"
 
     @get:Rule
     val helper: MigrationTestHelper =
@@ -26,6 +25,7 @@ class MigrationTest {
 
     @Test
     fun migrate5To6PreservesStockAndPendingOperations() {
+        val testDb = "migration-test-5-6"
         helper.createDatabase(testDb, 5).use { db ->
             db.execSQL("INSERT INTO products VALUES ('p', 'h', 'Pan', 'pan', NULL)")
             db.execSQL("INSERT INTO stock_items VALUES ('s', 'h', 'p', 'EXACT', '2', 'UNIT', NULL)")
@@ -49,6 +49,7 @@ class MigrationTest {
     @Test
     @Throws(IOException::class)
     fun migrate4To5_preservesInventoryAndCreatesShoppingTables() {
+        val testDb = "migration-test-4-5"
         helper.createDatabase(testDb, 4).use { db ->
             db.execSQL(
                 "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) VALUES ('p1', 'h1', 'Leche', 'leche', NULL)",
@@ -86,6 +87,7 @@ class MigrationTest {
     @Test
     @Throws(IOException::class)
     fun migrate3To4_preservesItemsAndScopesBarcodesByHousehold() {
+        val testDb = "migration-test-3-4"
         helper.createDatabase(testDb, 3).use { db ->
             db.execSQL(
                 "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) " +
@@ -121,6 +123,7 @@ class MigrationTest {
     @Test
     @Throws(IOException::class)
     fun migrate1To2() {
+        val testDb = "migration-test-1-2"
         helper.createDatabase(testDb, 1).use { db ->
             db.execSQL(
                 "INSERT INTO products (id, householdId, displayName, normalizedName) " +
@@ -188,6 +191,7 @@ class MigrationTest {
     @Test
     @Throws(IOException::class)
     fun migrate2To3() {
+        val testDb = "migration-test-2-3"
         helper.createDatabase(testDb, 2).use { db ->
             db.execSQL(
                 "INSERT INTO products (id, householdId, displayName, normalizedName, barcode) " +
@@ -216,6 +220,7 @@ class MigrationTest {
     @Test
     @Throws(IOException::class)
     fun migrate1To2To3() {
+        val testDb = "migration-test-1-2-3"
         helper.createDatabase(testDb, 1).use { db ->
             db.execSQL(
                 "INSERT INTO products (id, householdId, displayName, normalizedName) " +

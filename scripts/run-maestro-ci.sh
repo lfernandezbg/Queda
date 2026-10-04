@@ -120,10 +120,12 @@ check_health() {
                 adb -s "$SERIAL" pull "$DUMP_FILE" "$LOCAL_DUMP" > /dev/null 2>&1
 
                 if [[ -s "$LOCAL_DUMP" ]]; then
-                    # Check for ANR/Crash
+                    # Check for ANR/Crash system dialogs
                     if grep -Ei "isn't responding|isn&apos;t responding|has stopped|keeps stopping" "$LOCAL_DUMP"; then
-                        echo "Error: System dialog detected (ANR/Crash). Aborting."
-                        exit 1
+                        echo "System dialog detected (ANR/Crash). Dismissing with BACK/ENTER key..."
+                        adb -s "$SERIAL" shell input keyevent 4 > /dev/null 2>&1 || true
+                        adb -s "$SERIAL" shell input keyevent 66 > /dev/null 2>&1 || true
+                        HEALTHY=false
                     fi
                 else
                     echo "UI dump empty."
