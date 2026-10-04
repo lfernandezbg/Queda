@@ -15,7 +15,6 @@ import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 class MigrationTest {
-
     @get:Rule
     val helper: MigrationTestHelper =
         MigrationTestHelper(
