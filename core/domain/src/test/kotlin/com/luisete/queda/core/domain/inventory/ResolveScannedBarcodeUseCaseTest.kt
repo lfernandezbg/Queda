@@ -120,4 +120,29 @@ class ResolveScannedBarcodeUseCaseTest {
             val result = useCase("4006381333931")
             assertEquals(ResolveScannedBarcodeResult.StorageFailure, result)
         }
+
+    @Test
+    fun `multiple lots with one barcode remain available for explicit selection`() =
+        runTest {
+            val value = "4006381333931"
+            val barcode = (Barcode.create(value) as BarcodeCreationResult.Success).barcode
+            val home = HouseholdId.from("h1")
+            val product = ProductId.from("p1")
+            val name = (ProductName.create("Yogur") as ProductNameCreationResult.Success).productName
+            val first =
+                InventoryItem(
+                    Product(product, home, name, barcode),
+                    StockItem(
+                        StockItemId.from("lot-old"),
+                        home,
+                        product,
+                        ExactQuantity.of("2", MeasurementUnit.UNIT),
+                    ),
+                )
+            val second = first.copy(stockItem = first.stockItem.copy(id = StockItemId.from("lot-new")))
+            repository.emit(listOf(first, second))
+
+            val result = useCase(value) as ResolveScannedBarcodeResult.ExistingItem
+            assertEquals(listOf("lot-old", "lot-new"), result.candidates.map { it.stockItem.id.value })
+        }
 }

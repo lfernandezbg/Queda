@@ -28,6 +28,7 @@ object InventoryTestTags {
     const val ADD_EXACT_ITEM_UNIT_OPTION_KILOGRAM = "add_exact_item_unit_option_kilogram"
     const val ADD_EXACT_ITEM_UNIT_OPTION_MILLILITER = "add_exact_item_unit_option_milliliter"
     const val ADD_EXACT_ITEM_UNIT_OPTION_LITER = "add_exact_item_unit_option_liter"
+    const val ADD_EXACT_ITEM_UNIT_OPTION_RATION = "add_exact_item_unit_option_ration"
     const val ADD_EXACT_ITEM_NAME_ERROR = "add_exact_item_name_error"
     const val ADD_EXACT_ITEM_QUANTITY_ERROR = "add_exact_item_quantity_error"
     const val ADD_EXACT_ITEM_DUPLICATE_ERROR = "add_exact_item_duplicate_error"

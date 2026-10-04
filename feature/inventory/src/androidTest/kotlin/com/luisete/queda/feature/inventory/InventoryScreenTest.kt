@@ -94,7 +94,10 @@ class InventoryScreenTest {
         }
         composeTestRule.onNodeWithTag("${InventoryTestTags.INVENTORY_ITEM_ROW}_1").assertIsDisplayed()
         composeTestRule.onNodeWithTag(InventoryTestTags.INVENTORY_ITEM_NAME, useUnmergedTree = true).assertIsDisplayed()
-        composeTestRule.onNodeWithTag(InventoryTestTags.INVENTORY_ITEM_QUANTITY, useUnmergedTree = true).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(
+            InventoryTestTags.INVENTORY_ITEM_QUANTITY,
+            useUnmergedTree = true,
+        ).assertIsDisplayed()
         composeTestRule.onNodeWithText("Milk").assertIsDisplayed()
         composeTestRule.onNodeWithText("1 l").assertIsDisplayed()
     }
@@ -230,7 +233,7 @@ class InventoryScreenTest {
                                 item = item,
                                 amountInput = "11",
                                 selectedUnit = MeasurementUnit.UNIT,
-                                error = QuantityActionError.MUST_BE_LOWER_THAN_CURRENT,
+                                error = QuantityActionError.EXCEEDS_CURRENT,
                             ),
                     ),
                 onAddItem = {},
@@ -247,7 +250,7 @@ class InventoryScreenTest {
             )
         }
         composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("La cantidad a consumir debe ser menor que la actual.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("La cantidad a consumir no puede superar la actual.").assertIsDisplayed()
     }
 
     @Test

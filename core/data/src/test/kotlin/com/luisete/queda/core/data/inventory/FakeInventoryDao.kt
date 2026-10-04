@@ -74,11 +74,15 @@ class FakeInventoryDao : InventoryDao {
     override suspend fun getItemByBarcode(
         householdId: String,
         barcode: String,
-    ): InventoryItemProjection? {
-        val product = products.find { it.householdId == householdId && it.barcode == barcode }
-        val stock = if (product != null) stocks.find { it.productId == product.id } else null
+    ): InventoryItemProjection? = getItemsByBarcode(householdId, barcode).firstOrNull()
 
-        return if (product != null && stock != null) {
+    override suspend fun getItemsByBarcode(
+        householdId: String,
+        barcode: String,
+    ): List<InventoryItemProjection> {
+        val product = products.find { it.householdId == householdId && it.barcode == barcode }
+        if (product == null) return emptyList()
+        return stocks.filter { it.productId == product.id && it.householdId == householdId }.map { stock ->
             InventoryItemProjection(
                 productId = product.id,
                 productHouseholdId = product.householdId,
@@ -92,9 +96,12 @@ class FakeInventoryDao : InventoryDao {
                 quantityAmount = stock.quantityAmount,
                 quantityUnit = stock.quantityUnit,
                 isPresent = stock.isPresent,
+                locationId = stock.locationId,
+                foodType = stock.foodType,
+                label = stock.label,
+                preparedOn = stock.preparedOn,
+                bestBefore = stock.bestBefore,
             )
-        } else {
-            null
         }
     }
 

@@ -18,6 +18,7 @@ class ResolveScannedBarcodeUseCase
                                 findResult.item.stockItem.id,
                                 findResult.item.product.name.displayValue,
                                 findResult.item.stockItem.quantity,
+                                findResult.candidates,
                             )
 
                         FindItemByBarcodeResult.NotFound ->

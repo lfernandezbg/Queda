@@ -113,8 +113,8 @@ class HouseholdSyncIntegrationTest {
 
         repoA = OfflineInventoryRepository(dbA, dbA.inventoryDao(), dbA.syncDao(), managerA, syncA)
         repoB = OfflineInventoryRepository(dbB, dbB.inventoryDao(), dbB.syncDao(), managerB, syncB)
-        shoppingA = OfflineShoppingRepository(dbA, dbA.shoppingDao(), shoppingSyncA)
-        shoppingB = OfflineShoppingRepository(dbB, dbB.shoppingDao(), shoppingSyncB)
+        shoppingA = OfflineShoppingRepository(dbA.shoppingDao(), shoppingSyncA)
+        shoppingB = OfflineShoppingRepository(dbB.shoppingDao(), shoppingSyncB)
     }
 
     @After
@@ -177,13 +177,30 @@ class HouseholdSyncIntegrationTest {
                     shoppingB.observe(managerB.currentHouseholdId()).first().any { it.name == "Pan" }
                 }
                 val shoppingId = shoppingB.observe(managerB.currentHouseholdId()).first().single { it.name == "Pan" }.id
-                assertEquals(ShoppingResult.Saved, shoppingB.setPurchased(managerB.currentHouseholdId(), shoppingId, true))
+                assertEquals(
+                    ShoppingResult.Saved,
+                    shoppingB.setPurchased(
+                        managerB.currentHouseholdId(),
+                        shoppingId,
+                        true,
+                    ),
+                )
                 waitUntil("User A sees purchased") {
                     shoppingA.observe(managerA.currentHouseholdId()).first().any { it.id == shoppingId && it.purchased }
                 }
-                assertEquals(ShoppingResult.Saved, shoppingA.setPurchased(managerA.currentHouseholdId(), shoppingId, false))
+                assertEquals(
+                    ShoppingResult.Saved,
+                    shoppingA.setPurchased(
+                        managerA.currentHouseholdId(),
+                        shoppingId,
+                        false,
+                    ),
+                )
                 waitUntil("User B sees pending again") {
-                    shoppingB.observe(managerB.currentHouseholdId()).first().any { it.id == shoppingId && !it.purchased }
+                    shoppingB.observe(managerB.currentHouseholdId()).first().any {
+                        it.id == shoppingId &&
+                            !it.purchased
+                    }
                 }
 
                 // Two offline additions with the same normalized name converge on one entry.

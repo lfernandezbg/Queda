@@ -25,7 +25,9 @@ interface InventoryDao {
             s.trackingMode AS trackingMode,
             s.quantityAmount AS quantityAmount,
             s.quantityUnit AS quantityUnit,
-            s.isPresent AS isPresent
+            s.isPresent AS isPresent,
+            s.locationId AS locationId, s.foodType AS foodType, s.label AS label,
+            s.preparedOn AS preparedOn, s.bestBefore AS bestBefore
         FROM products AS p
         INNER JOIN stock_items AS s
             ON s.productId = p.id
@@ -67,7 +69,9 @@ interface InventoryDao {
             s.trackingMode AS trackingMode,
             s.quantityAmount AS quantityAmount,
             s.quantityUnit AS quantityUnit,
-            s.isPresent AS isPresent
+            s.isPresent AS isPresent,
+            s.locationId AS locationId, s.foodType AS foodType, s.label AS label,
+            s.preparedOn AS preparedOn, s.bestBefore AS bestBefore
         FROM products AS p
         INNER JOIN stock_items AS s
             ON s.productId = p.id
@@ -80,6 +84,28 @@ interface InventoryDao {
         householdId: String,
         barcode: String,
     ): InventoryItemProjection?
+
+    @Query(
+        """
+        SELECT p.id AS productId, p.householdId AS productHouseholdId,
+            p.displayName AS productDisplayName, p.normalizedName AS productNormalizedName,
+            p.barcode AS productBarcode,
+            s.id AS stockItemId, s.householdId AS stockHouseholdId,
+            s.productId AS stockProductId, s.trackingMode AS trackingMode,
+            s.quantityAmount AS quantityAmount, s.quantityUnit AS quantityUnit,
+            s.isPresent AS isPresent, s.locationId AS locationId,
+            s.foodType AS foodType, s.label AS label,
+            s.preparedOn AS preparedOn, s.bestBefore AS bestBefore
+        FROM products AS p INNER JOIN stock_items AS s
+          ON s.productId = p.id AND s.householdId = p.householdId
+        WHERE p.householdId = :householdId AND p.barcode = :barcode
+        ORDER BY s.preparedOn, s.id
+        """,
+    )
+    suspend fun getItemsByBarcode(
+        householdId: String,
+        barcode: String,
+    ): List<InventoryItemProjection>
 
     @Insert
     suspend fun insertProduct(product: ProductEntity)

@@ -26,11 +26,16 @@ import androidx.lifecycle.viewModelScope
 import com.luisete.queda.core.designsystem.theme.QuedaSpacing
 import com.luisete.queda.core.domain.inventory.ObserveExactInventoryItemsUseCase
 import com.luisete.queda.core.domain.shopping.ObserveShoppingEntries
+import com.luisete.queda.core.model.inventory.FoodType
 import com.luisete.queda.core.model.inventory.InventoryItem
+import com.luisete.queda.core.model.quantity.ApproximateQuantity
+import com.luisete.queda.core.model.quantity.ExactQuantity
+import com.luisete.queda.core.model.quantity.PresenceQuantity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
@@ -78,6 +83,22 @@ fun TodayScreen(
     onShopping: () -> Unit,
     onInventory: () -> Unit,
 ) {
+    val today = LocalDate.now()
+    val available =
+        state.inventory.filter { item ->
+            when (val quantity = item.stockItem.quantity) {
+                is ExactQuantity -> quantity.amount.signum() > 0
+                is PresenceQuantity -> quantity.isPresent
+                is ApproximateQuantity -> true
+            }
+        }
+    val upcoming =
+        available.filter { item ->
+            item.stockItem.details.bestBefore?.let { !it.isAfter(today.plusDays(7)) } == true
+        }.sortedBy { it.stockItem.details.bestBefore }.take(4)
+    val prepared =
+        available.filter { it.stockItem.details.foodType == FoodType.PREPARED }
+            .sortedByDescending { it.stockItem.details.preparedOn }.take(4)
     LazyColumn(
         modifier =
             Modifier
@@ -132,7 +153,7 @@ fun TodayScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = stringResource(R.string.today_inventory_count, state.inventory.size),
+                    text = stringResource(R.string.today_inventory_count, available.size),
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Button(onClick = onInventory) {
@@ -144,17 +165,33 @@ fun TodayScreen(
                 style = MaterialTheme.typography.titleLarge,
             )
         }
-        items(
-            items = state.inventory.take(4),
-            key = { it.stockItem.id.value },
-        ) { item ->
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = item.product.name.displayValue,
-                    modifier = Modifier.padding(QuedaSpacing.Medium),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+        if (upcoming.isNotEmpty()) {
+            item { Text(stringResource(R.string.today_upcoming), style = MaterialTheme.typography.titleLarge) }
+            items(upcoming, key = { "upcoming-${it.stockItem.id.value}" }) { entry ->
+                val date = entry.stockItem.details.bestBefore.toString()
+                TodayStockCard(entry, stringResource(R.string.today_before, date))
             }
+        }
+        if (prepared.isNotEmpty()) {
+            item { Text(stringResource(R.string.today_prepared), style = MaterialTheme.typography.titleLarge) }
+            items(prepared, key = { "prepared-${it.stockItem.id.value}" }) { entry ->
+                val date = entry.stockItem.details.preparedOn?.toString()
+                val label = date?.let { stringResource(R.string.today_prepared_on, it) }.orEmpty()
+                TodayStockCard(entry, label)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayStockCard(
+    item: InventoryItem,
+    date: String,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(QuedaSpacing.Medium)) {
+            Text(item.product.name.displayValue, style = MaterialTheme.typography.bodyLarge)
+            if (date.isNotEmpty()) Text(date, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

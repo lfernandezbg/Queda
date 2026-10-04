@@ -19,6 +19,7 @@ dependencies {
 
     // ML Kit
     implementation(libs.mlkit.barcode.scanning)
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

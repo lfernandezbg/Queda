@@ -3,9 +3,12 @@
 package com.luisete.queda
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory2
@@ -29,6 +32,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.luisete.queda.core.data.household.FirebaseHouseholdManager
+import com.luisete.queda.core.data.household.HouseholdSession
 import com.luisete.queda.core.data.household.HouseholdSyncStatus
 import com.luisete.queda.core.designsystem.QuedaTestTags
 import com.luisete.queda.feature.inventory.AddExactItemRoute
@@ -48,7 +53,9 @@ import com.luisete.queda.feature.inventory.BarcodeScannerViewModel
 import com.luisete.queda.feature.inventory.ContinuousScanViewModel
 import com.luisete.queda.feature.inventory.InventoryRoute
 import com.luisete.queda.feature.inventory.InventoryViewModel
+import com.luisete.queda.feature.inventory.LocationsRoute
 import com.luisete.queda.feature.inventory.ProductLookupFeedback
+import com.luisete.queda.feature.inventory.ReceiptRoute
 import com.luisete.queda.feature.settings.SettingsScreen
 import com.luisete.queda.feature.shopping.ShoppingRoute
 import com.luisete.queda.feature.shopping.ShoppingViewModel
@@ -80,10 +87,12 @@ fun QuedaAppRoot(
         Scaffold(
             topBar = {
                 if (manager != null && route != "inventory/scanner") {
-                    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth()) {
-                        Text(householdName, Modifier.weight(1f).padding(start = 16.dp, top = 16.dp))
-                        Text(statusLabel(status), Modifier.padding(top = 16.dp))
-                        TextButton(onClick = manager::refresh) { Text(stringResource(R.string.sync_refresh)) }
+                    Column(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp)) {
+                        Text(householdName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Row(Modifier.fillMaxWidth()) {
+                            Text(statusLabel(status), Modifier.weight(1f), maxLines = 2)
+                            TextButton(onClick = manager::refresh) { Text(stringResource(R.string.sync_refresh)) }
+                        }
                     }
                 }
             },
@@ -91,6 +100,8 @@ fun QuedaAppRoot(
                 val fullScreenRoutes =
                     listOf(
                         "inventory/scanner",
+                        "inventory/receipt",
+                        "settings/locations",
                         "inventory/add-exact?barcode={barcode}&name={name}&lookup={lookup}",
                     )
                 if (route !in fullScreenRoutes) {
@@ -170,6 +181,7 @@ private fun QuedaNavHost(
         }
         composable(route = "shopping") { ShoppingRoute(hiltViewModel<ShoppingViewModel>()) }
         composable(route = "settings") {
+            val currentSession = manager?.state?.collectAsStateWithLifecycle()?.value
             SettingsScreen(
                 householdName = householdName.ifBlank { "Mi Hogar" },
                 syncText = statusLabel(status).ifBlank { stringResource(R.string.sync_updated) },
@@ -177,11 +189,23 @@ private fun QuedaNavHost(
                 onInvite = { manager?.createInvite() },
                 onRefresh = { manager?.refresh() },
                 onSignOut = { manager?.signOut() },
+                canInvite = (currentSession as? HouseholdSession.Active)?.canInvite == true,
+                busy = manager?.busy?.collectAsStateWithLifecycle()?.value == true,
+                inviteExpiry = manager?.inviteExpiry?.collectAsStateWithLifecycle()?.value,
+                onLocations = { navController.navigate("settings/locations") },
             )
+        }
+        composable(route = "settings/locations") {
+            LocationsRoute(hiltViewModel(), { navController.popBackStack() })
+        }
+        composable(route = "inventory/receipt") {
+            ReceiptRoute(hiltViewModel(), hiltViewModel(), { navController.popBackStack() })
         }
         composable(route = "inventory") {
             InventoryRoute(
                 viewModel = hiltViewModel(),
+                management = hiltViewModel(),
+                onReceipt = { navController.navigate("inventory/receipt") },
                 onAddItem = {
                     navController.navigate("inventory/add-exact") {
                         launchSingleTop = true
@@ -218,6 +242,7 @@ private fun QuedaNavHost(
             }
             AddExactItemRoute(
                 viewModel = viewModel,
+                management = hiltViewModel(),
                 onBack = {
                     navController.popBackStack("inventory", inclusive = false)
                 },

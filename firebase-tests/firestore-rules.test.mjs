@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, writeBatch, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, Timestamp } from 'firebase/firestore';
 
 const environment = await initializeTestEnvironment({
   projectId: 'demo-queda-s1',
@@ -108,8 +109,6 @@ try {
   await assertFails(updateDoc(doc(bob, itemExact), { quantityAmount: '9', revision: 2, updatedBy: 'bob' }));
   // Member updating quantityAmount = "-5" fails!
   await assertFails(updateDoc(doc(owner, itemExact), { quantityAmount: '-5', revision: 2, updatedBy: 'owner' }));
-  // Member updating quantityAmount = "0" fails!
-  await assertFails(updateDoc(doc(owner, itemExact), { quantityAmount: '0', revision: 2, updatedBy: 'owner' }));
   // Member updating invalid decimal format (4 decimals) fails!
   await assertFails(updateDoc(doc(owner, itemExact), { quantityAmount: '1.2345', revision: 2, updatedBy: 'owner' }));
   // Member updating invalid unit fails!
@@ -152,6 +151,70 @@ try {
   await assertFails(setDoc(doc(lateGuest, 'households/home-a/members/late-guest'), {
     joinedAt: Timestamp.now(), inviteCode: expiredCode,
   }));
+
+  // Full consumption preserves a valid zero balance; creation still requires positive stock.
+  await assertSucceeds(updateDoc(doc(owner, itemExact), { quantityAmount: '0', revision: 3, updatedBy: 'owner' }));
+  assert.equal((await getDoc(doc(alice, itemExact))).data().quantityAmount, '0');
+  const prepared = 'households/home-a/items/stock-rations';
+  await assertSucceeds(setDoc(doc(owner, prepared), {
+    productId: 'prepared-product', displayName: 'Lentejas', normalizedName: 'lentejas',
+    barcode: null, trackingMode: 'EXACT', quantityAmount: '2',
+    quantityUnit: 'RATION', isPresent: null, foodType: 'PREPARED',
+    revision: 1, updatedBy: 'owner',
+  }));
+  await assertSucceeds(updateDoc(doc(alice, prepared), {
+    quantityAmount: '1', revision: 2, updatedBy: 'alice',
+  }));
+  await assertFails(updateDoc(doc(bob, prepared), {
+    quantityAmount: '0', revision: 3, updatedBy: 'bob',
+  }));
+
+  const renameItem = 'households/home-a/items/stock-rename';
+  const oldClaim = `households/home-a/names/${createHash('sha256').update('yogur').digest('hex')}`;
+  const newClaim = `households/home-a/names/${createHash('sha256').update('yogur natural').digest('hex')}`;
+  await assertSucceeds(setDoc(doc(owner, renameItem), {
+    productId: 'rename-product', displayName: 'Yogur', normalizedName: 'yogur',
+    barcode: null, trackingMode: 'EXACT', quantityAmount: '2',
+    quantityUnit: 'UNIT', isPresent: null, revision: 1, updatedBy: 'owner',
+  }));
+  await assertSucceeds(setDoc(doc(owner, oldClaim), { stockItemId: 'stock-rename' }));
+  await assertFails(deleteDoc(doc(owner, oldClaim)));
+  const rename = writeBatch(owner);
+  rename.update(doc(owner, renameItem), {
+    displayName: 'Yogur natural', normalizedName: 'yogur natural', revision: 2, updatedBy: 'owner',
+  });
+  rename.set(doc(owner, newClaim), { stockItemId: 'stock-rename' });
+  rename.delete(doc(owner, oldClaim));
+  await assertSucceeds(rename.commit());
+  assert.equal((await getDoc(doc(alice, renameItem))).data().displayName, 'Yogur natural');
+  assert.equal((await getDoc(doc(owner, oldClaim))).exists(), false);
+  await assertFails(updateDoc(doc(bob, renameItem), {
+    displayName: 'Ajeno', normalizedName: 'ajeno', revision: 3, updatedBy: 'bob',
+  }));
+
+  const locationPath = 'households/home-a/locations/fridge';
+  await assertFails(setDoc(doc(bob, locationPath), {
+    name: 'Nevera', normalizedName: 'nevera', archived: false, revision: 1, updatedBy: 'bob',
+  }));
+  await assertSucceeds(setDoc(doc(owner, locationPath), {
+    name: 'Nevera', normalizedName: 'nevera', archived: false, revision: 1, updatedBy: 'owner',
+  }));
+  await assertSucceeds(updateDoc(doc(owner, itemExact), { locationId: 'fridge', revision: 4, updatedBy: 'owner' }));
+  await assertSucceeds(updateDoc(doc(owner, locationPath), { archived: true, revision: 2 }));
+  // Existing food keeps its archived location, but new assignments are forbidden.
+  await assertSucceeds(updateDoc(doc(owner, itemExact), { label: 'Leche del desayuno', revision: 5, updatedBy: 'owner' }));
+  await assertFails(updateDoc(doc(owner, itemPresence), { locationId: 'fridge', revision: 3, updatedBy: 'owner' }));
+  await assertFails(updateDoc(doc(owner, itemExact), { locationId: 'missing', revision: 6, updatedBy: 'owner' }));
+  await assertFails(updateDoc(doc(owner, itemExact), {
+    foodType: 'PREPARED', preparedOn: '2026-10-03', bestBefore: '2026-10-02', revision: 6, updatedBy: 'owner',
+  }));
+  await assertFails(updateDoc(doc(owner, itemPresence), { foodType: 'PREPARED', revision: 3, updatedBy: 'owner' }));
+  // A bad write rolls back the entire Firestore batch.
+  const consumption = writeBatch(owner);
+  consumption.update(doc(owner, itemExact), { quantityAmount: '1', revision: 6, updatedBy: 'owner' });
+  consumption.update(doc(owner, itemPresence), { quantityAmount: '-1', revision: 3, updatedBy: 'owner' });
+  await assertFails(consumption.commit());
+  assert.equal((await getDoc(doc(owner, itemExact))).data().quantityAmount, '0');
 
   console.log('Firestore rules: PASS (validation of amounts, units, modes, negative quantities, invites)');
 } finally {

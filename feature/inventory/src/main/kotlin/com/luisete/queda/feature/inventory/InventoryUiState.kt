@@ -1,6 +1,7 @@
 package com.luisete.queda.feature.inventory
 
 import com.luisete.queda.core.model.inventory.InventoryItem
+import com.luisete.queda.core.model.inventory.StockDetails
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import com.luisete.queda.core.model.quantity.StockQuantity
@@ -65,7 +66,7 @@ enum class QuantityActionError {
     INVALID_AMOUNT,
     INCOMPATIBLE_UNIT,
     MUST_BE_POSITIVE,
-    MUST_BE_LOWER_THAN_CURRENT,
+    EXCEEDS_CURRENT,
     STORAGE_FAILURE,
     UNCHANGED,
     PRODUCT_NOT_FOUND,
@@ -76,6 +77,7 @@ data class InventoryItemUiModel(
     val name: String,
     val quantity: StockQuantity,
     val barcode: String? = null,
+    val details: StockDetails = StockDetails(),
 ) {
     val amountFormatted: String
         get() = if (quantity is ExactQuantity) ExactQuantityUiFormatter.format(quantity) else ""
@@ -84,7 +86,8 @@ data class InventoryItemUiModel(
 fun InventoryItem.toUiModel(): InventoryItemUiModel =
     InventoryItemUiModel(
         id = stockItem.id.value,
-        name = product.name.displayValue,
+        name = stockItem.details.label ?: product.name.displayValue,
         quantity = stockItem.quantity,
         barcode = product.barcode?.value,
+        details = stockItem.details,
     )

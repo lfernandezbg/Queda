@@ -55,9 +55,11 @@ appId: com.luisete.queda.e2e
     visible:
       id: "inventory_screen"
     timeout: 10000
-- assertVisible: "Yogur"
-- assertVisible: "4 ud"
 - assertVisible: "Arroz"
 - assertVisible: "500 g"
 - assertVisible: "Leche"
 - assertVisible: "1 l"
+- scrollUntilVisible:
+    element: "Yogur"
+- assertVisible: "Yogur"
+- assertVisible: "4 ud"

@@ -103,7 +103,7 @@ class QuantityDomainIntegrationTests {
         val q1 = ExactQuantity.of("100", MeasurementUnit.GRAM)
         val q2 = ExactQuantity.of("200", MeasurementUnit.GRAM)
         assertEquals(
-            DomainError.AmountMustBeLowerThanCurrent,
+            DomainError.AmountExceedsCurrent,
             QuantityOperations.consume(q1, q2).failureError(),
         )
         assertAmount("100", q1.amount)

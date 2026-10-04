@@ -15,6 +15,7 @@ import com.luisete.queda.core.domain.inventory.ExternalProductLookup
 import com.luisete.queda.core.domain.inventory.ExternalProductResult
 import com.luisete.queda.core.domain.inventory.ResolveScannedBarcodeResult
 import com.luisete.queda.core.domain.inventory.ResolveScannedBarcodeUseCase
+import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.PresenceQuantity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -41,17 +42,13 @@ class BarcodeScannerViewModel
 
         private val processingGate = AtomicBoolean(false)
         private var lastReviewedBarcode: String? = null
-        private var lastReviewFinishedAt = 0L
 
         fun onBarcodeDetected(rawBarcode: String) {
-            if (rawBarcode.isBlank()) return
-            // The camera keeps seeing the same packet while the review sheet closes.
-            // Allow it again after a short pause so users can scan identical packets deliberately.
-            if (mutableUiState.value.continuousMode && rawBarcode == lastReviewedBarcode &&
-                System.currentTimeMillis() - lastReviewFinishedAt < 3000L
-            ) {
+            if (rawBarcode.isBlank()) {
+                if (!processingGate.get()) lastReviewedBarcode = null
                 return
             }
+            if (mutableUiState.value.continuousMode && rawBarcode == lastReviewedBarcode) return
             if (!processingGate.compareAndSet(false, true)) return
 
             mutableUiState.update { it.copy(isProcessing = true, lastError = null) }
@@ -69,28 +66,56 @@ class BarcodeScannerViewModel
                                 ExternalProductResult.Unavailable -> ProductLookupFeedback.UNAVAILABLE
                             }
                         if (mutableUiState.value.continuousMode) {
-                            mutableUiState.update { it.copy(pendingScan = PendingScan.New(result.barcode.value, name, feedback)) }
+                            mutableUiState.update {
+                                it.copy(
+                                    pendingScan =
+                                        PendingScan.New(
+                                            result.barcode.value,
+                                            name,
+                                            feedback,
+                                        ),
+                                )
+                            }
                         } else {
-                            navigationChannel.send(BarcodeScannerNavigationEvent.ToAddItem(result.barcode.value, name, feedback))
+                            navigationChannel.send(
+                                BarcodeScannerNavigationEvent.ToAddItem(
+                                    result.barcode.value,
+                                    name,
+                                    feedback,
+                                ),
+                            )
                         }
                         // Keep processingGate as true to block further scans until destroyed
                     }
 
                     is ResolveScannedBarcodeResult.ExistingItem -> {
-                        if (mutableUiState.value.continuousMode) {
-                            mutableUiState.update {
-                                it.copy(
-                                    pendingScan =
-                                        PendingScan.Existing(
-                                            result.stockItemId.value,
-                                            rawBarcode,
-                                            result.name.orEmpty(),
-                                            result.quantity is PresenceQuantity,
-                                        ),
-                                )
-                            }
+                        if (result.candidates.size > 1) {
+                            val choices =
+                                result.candidates.map { candidate ->
+                                    PendingScan.Existing(
+                                        candidate.stockItem.id.value,
+                                        rawBarcode,
+                                        candidate.product.name.displayValue,
+                                        candidate.stockItem.quantity is PresenceQuantity,
+                                        listOfNotNull(
+                                            candidate.stockItem.details.label,
+                                            candidate.stockItem.details.preparedOn?.toString(),
+                                            (candidate.stockItem.quantity as? ExactQuantity)?.let {
+                                                "${it.amount.toPlainString()} ${it.unit.name}"
+                                            },
+                                        ).joinToString(" · ").ifBlank { candidate.stockItem.id.value.takeLast(6) },
+                                    )
+                                }
+                            mutableUiState.update { it.copy(isProcessing = false, lotChoices = choices) }
                         } else {
-                            navigationChannel.send(BarcodeScannerNavigationEvent.ToInventoryWithItem(result.stockItemId.value))
+                            showExisting(
+                                PendingScan.Existing(
+                                    result.stockItemId.value,
+                                    rawBarcode,
+                                    result.name.orEmpty(),
+                                    result.quantity is PresenceQuantity,
+                                ),
+                            )
                         }
                         // Keep processingGate as true
                     }
@@ -131,7 +156,23 @@ class BarcodeScannerViewModel
         }
 
         fun setContinuousMode(enabled: Boolean) {
-            if (mutableUiState.value.pendingScan == null) mutableUiState.update { it.copy(continuousMode = enabled) }
+            if (mutableUiState.value.pendingScan == null && mutableUiState.value.lotChoices.isEmpty()) {
+                mutableUiState.update { it.copy(continuousMode = enabled) }
+            }
+        }
+
+        fun selectLot(id: String) {
+            val selected = mutableUiState.value.lotChoices.firstOrNull { it.stockItemId == id } ?: return
+            mutableUiState.update { it.copy(lotChoices = emptyList()) }
+            viewModelScope.launch { showExisting(selected) }
+        }
+
+        private suspend fun showExisting(item: PendingScan.Existing) {
+            if (mutableUiState.value.continuousMode) {
+                mutableUiState.update { it.copy(pendingScan = item) }
+            } else {
+                navigationChannel.send(BarcodeScannerNavigationEvent.ToInventoryWithItem(item.stockItemId))
+            }
         }
 
         fun resume() {
@@ -141,8 +182,7 @@ class BarcodeScannerViewModel
                     is PendingScan.Existing -> pending.barcode
                     null -> null
                 }
-            lastReviewFinishedAt = System.currentTimeMillis()
-            mutableUiState.update { it.copy(isProcessing = false, pendingScan = null, lastError = null) }
+            mutableUiState.update { it.copy(isProcessing = false, pendingScan = null, lotChoices = emptyList(), lastError = null) }
             processingGate.set(false)
         }
     }
@@ -153,12 +193,19 @@ data class BarcodeScannerUiState(
     val lastError: BarcodeScannerError? = null,
     val continuousMode: Boolean = false,
     val pendingScan: PendingScan? = null,
+    val lotChoices: List<PendingScan.Existing> = emptyList(),
 )
 
 sealed interface PendingScan {
     data class New(val barcode: String, val suggestedName: String?, val feedback: ProductLookupFeedback) : PendingScan
 
-    data class Existing(val stockItemId: String, val barcode: String, val name: String, val isPresence: Boolean) : PendingScan
+    data class Existing(
+        val stockItemId: String,
+        val barcode: String,
+        val name: String,
+        val isPresence: Boolean,
+        val description: String = "",
+    ) : PendingScan
 }
 
 enum class PermissionState {

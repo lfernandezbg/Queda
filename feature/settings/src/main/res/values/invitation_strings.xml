@@ -1,0 +1,11 @@
+<resources>
+    <string name="settings_copied">Copiado</string>
+    <string name="settings_locations">Gestionar ubicaciones</string>
+    <string name="settings_owner_invites">La persona propietaria del hogar puede generar invitaciones.</string>
+    <string name="settings_invite_instructions">Abre Queda, crea tu cuenta o inicia sesión y elige Unirse a un hogar. Pega el código para compartir el inventario y la compra. El código caduca a los 7 días; después hay que generar otro.</string>
+    <string name="settings_invite_expiry">Caduca: %1$s</string>
+    <string name="settings_invite_message">Te invito al hogar %1$s en Queda. Código: %2$s</string>
+    <string name="settings_copy">Copiar invitación</string>
+    <string name="settings_share">Compartir invitación</string>
+    <string name="settings_email">Enviar por correo</string>
+</resources>

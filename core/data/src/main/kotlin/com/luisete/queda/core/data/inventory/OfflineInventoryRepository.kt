@@ -58,6 +58,15 @@ class OfflineInventoryRepository
             try {
                 val result =
                     database.withTransaction {
+                        val loc = stockItem.details.locationId
+                        if (!stockItem.details.isValid(java.time.LocalDate.now()) ||
+                            loc != null && database.managementDao().location(
+                                product.householdId.value,
+                                loc,
+                            )?.archived != false
+                        ) {
+                            return@withTransaction null
+                        }
                         val outcome = inventoryDao.addExactInventoryItem(product.toEntity(), stockItem.toEntity())
                         if (outcome == AddExactInventoryItemDbResult.Added) {
                             syncDao?.enqueue(
@@ -73,6 +82,7 @@ class OfflineInventoryRepository
                     }
                 if (result == AddExactInventoryItemDbResult.Added) sync?.onLocalChange()
                 when (result) {
+                    null -> AddExactItemRepositoryResult.InvalidDetails
                     AddExactInventoryItemDbResult.Added -> AddExactItemRepositoryResult.Added
                     AddExactInventoryItemDbResult.DuplicateProductName ->
                         AddExactItemRepositoryResult.DuplicateProductName
@@ -199,7 +209,14 @@ class OfflineInventoryRepository
                             id = stockItemId.value,
                             isPresent = isPresent,
                         )
-                        syncDao?.enqueue(newPending(entity.householdId, entity.id, "PRESENCE", SyncPayloadCodec.presence(isPresent)))
+                        syncDao?.enqueue(
+                            newPending(
+                                entity.householdId,
+                                entity.id,
+                                "PRESENCE",
+                                SyncPayloadCodec.presence(isPresent),
+                            ),
+                        )
                         QuantityMutationResult.Success(PresenceQuantity(isPresent))
                     }
                 if (outcome is QuantityMutationResult.Success) sync?.onLocalChange()
@@ -213,9 +230,10 @@ class OfflineInventoryRepository
         @Suppress("TooGenericExceptionCaught", "SwallowedException")
         override suspend fun findItemByBarcode(barcode: Barcode): FindItemByBarcodeResult =
             try {
-                val entity = inventoryDao.getItemByBarcode(householdProvider.currentHouseholdId().value, barcode.value)
-                if (entity != null) {
-                    FindItemByBarcodeResult.Found(entity.toDomain())
+                val entities = inventoryDao.getItemsByBarcode(householdProvider.currentHouseholdId().value, barcode.value)
+                if (entities.isNotEmpty()) {
+                    val candidates = entities.map { it.toDomain() }
+                    FindItemByBarcodeResult.Found(candidates.first(), candidates)
                 } else {
                     FindItemByBarcodeResult.NotFound
                 }
@@ -230,5 +248,12 @@ class OfflineInventoryRepository
             stockId: String,
             action: String,
             payload: String,
-        ) = PendingSyncOperationEntity(UUID.randomUUID().toString(), householdId, stockId, action, payload, System.currentTimeMillis())
+        ) = PendingSyncOperationEntity(
+            UUID.randomUUID().toString(),
+            householdId,
+            stockId,
+            action,
+            payload,
+            System.currentTimeMillis(),
+        )
     }

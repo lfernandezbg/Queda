@@ -31,6 +31,7 @@ object DatabaseModule {
                 QuedaDatabase.MIGRATION_2_3,
                 QuedaDatabase.MIGRATION_3_4,
                 QuedaDatabase.MIGRATION_4_5,
+                QuedaDatabase.MIGRATION_5_6,
             )
             .build()
 

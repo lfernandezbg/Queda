@@ -57,13 +57,8 @@ internal class BarcodeAnalyzer(
         scanner.process(image)
             .addOnSuccessListener { barcodes ->
                 if (isClosed.get()) return@addOnSuccessListener
-                for (barcode in barcodes) {
-                    val rawValue = barcode.rawValue
-                    if (!rawValue.isNullOrBlank()) {
-                        onBarcodeDetected(rawValue)
-                        break
-                    }
-                }
+                val barcode = barcodes.firstNotNullOfOrNull { it.rawValue?.takeIf(String::isNotBlank) }
+                onBarcodeDetected(barcode.orEmpty())
             }
             .addOnFailureListener { e ->
                 if (!isClosed.get()) {

@@ -10,4 +10,5 @@ data class StockItem(
     val householdId: HouseholdId,
     val productId: ProductId,
     val quantity: StockQuantity,
+    val details: StockDetails = StockDetails(),
 )

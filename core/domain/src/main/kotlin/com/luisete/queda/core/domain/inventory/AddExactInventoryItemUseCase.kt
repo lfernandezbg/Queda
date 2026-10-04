@@ -4,7 +4,9 @@ import com.luisete.queda.core.model.barcode.Barcode
 import com.luisete.queda.core.model.barcode.BarcodeCreationResult
 import com.luisete.queda.core.model.id.ProductId
 import com.luisete.queda.core.model.id.StockItemId
+import com.luisete.queda.core.model.inventory.FoodType
 import com.luisete.queda.core.model.inventory.InventoryItem
+import com.luisete.queda.core.model.inventory.StockDetails
 import com.luisete.queda.core.model.inventory.StockItem
 import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.product.Product
@@ -20,14 +22,20 @@ class AddExactInventoryItemUseCase
         private val repository: InventoryRepository,
         private val householdProvider: CurrentHouseholdIdProvider,
     ) {
-        @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod")
+        @Suppress("ReturnCount", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
         suspend operator fun invoke(
             rawName: String,
             rawQuantity: String,
             unit: MeasurementUnit,
             rawBarcode: String? = null,
             trackingMode: StockTrackingMode = StockTrackingMode.EXACT,
+            details: StockDetails = StockDetails(),
         ): AddExactInventoryItemResult {
+            if (!details.isValid(java.time.LocalDate.now()) ||
+                details.foodType == FoodType.PREPARED && trackingMode != StockTrackingMode.EXACT
+            ) {
+                return AddExactInventoryItemResult.InvalidDetails
+            }
             val nameResult = ProductName.create(rawName)
             val quantityResult =
                 if (trackingMode == StockTrackingMode.EXACT) {
@@ -94,6 +102,7 @@ class AddExactInventoryItemUseCase
                     householdId = householdId,
                     productId = productId,
                     quantity = quantity,
+                    details = details,
                 )
             val inventoryItem = InventoryItem(product, stockItem)
 
@@ -101,6 +110,7 @@ class AddExactInventoryItemUseCase
                 AddExactItemRepositoryResult.Added -> AddExactInventoryItemResult.Added(inventoryItem)
                 AddExactItemRepositoryResult.DuplicateProductName -> AddExactInventoryItemResult.DuplicateProductName
                 AddExactItemRepositoryResult.DuplicateBarcode -> AddExactInventoryItemResult.DuplicateBarcode
+                AddExactItemRepositoryResult.InvalidDetails -> AddExactInventoryItemResult.InvalidDetails
                 AddExactItemRepositoryResult.StorageFailure -> AddExactInventoryItemResult.StorageFailure
             }
         }

@@ -12,6 +12,7 @@ import com.luisete.queda.core.domain.inventory.ObserveExactInventoryItemsUseCase
 import com.luisete.queda.core.domain.inventory.QuantityMutationResult
 import com.luisete.queda.core.domain.inventory.SetPresenceUseCase
 import com.luisete.queda.core.domain.result.DomainError
+import com.luisete.queda.core.domain.result.Success
 import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
@@ -269,8 +270,8 @@ class InventoryViewModel
                             DomainError.IncompatibleQuantityDimensions -> QuantityActionError.INCOMPATIBLE_UNIT
                             DomainError.InsufficientQuantity,
                             DomainError.ResultingQuantityMustBePositive,
-                            DomainError.AmountMustBeLowerThanCurrent,
-                            -> QuantityActionError.MUST_BE_LOWER_THAN_CURRENT
+                            DomainError.AmountExceedsCurrent,
+                            -> QuantityActionError.EXCEEDS_CURRENT
                             DomainError.AmountMustBePositive -> QuantityActionError.MUST_BE_POSITIVE
                             DomainError.NegativeQuantity,
                             DomainError.TooManyDecimalPlaces,
@@ -316,7 +317,7 @@ class InventoryViewModel
                     toConsume = parseResult.quantity,
                 )
 
-            return if (result is com.luisete.queda.core.domain.result.Success) {
+            return if (result is Success) {
                 QuantityPreviewUiModel(
                     amountFormatted = ExactQuantityUiFormatter.format(result.value),
                     unit = result.value.unit,
@@ -339,7 +340,7 @@ class InventoryViewModel
                     newQuantity = parseResult.quantity,
                 )
 
-            return if (result is com.luisete.queda.core.domain.result.Success) {
+            return if (result is Success) {
                 QuantityPreviewUiModel(
                     amountFormatted = ExactQuantityUiFormatter.format(result.value),
                     unit = result.value.unit,

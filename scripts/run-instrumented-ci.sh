@@ -157,7 +157,13 @@ run_instrumented_tests() {
     ./gradlew \
         --no-daemon \
         --stacktrace \
-        :app:connectedDebugAndroidTest
+        :app:connectedDebugAndroidTest \
+        :core:database:connectedDebugAndroidTest \
+        :core:data:connectedDebugAndroidTest \
+        :feature:inventory:connectedDebugAndroidTest \
+        :feature:onboarding:connectedDebugAndroidTest \
+        :feature:settings:connectedDebugAndroidTest \
+        -Pandroid.testInstrumentationRunnerArguments.notClass=com.luisete.queda.core.data.household.HouseholdSyncIntegrationTest,com.luisete.queda.core.data.inventory.OpenFoodFactsLiveApiSupervisedTest
 }
 
 trap collect_diagnostics ERR

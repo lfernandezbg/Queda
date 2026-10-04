@@ -533,7 +533,7 @@ class InventoryViewModelTest {
             viewModel.onAmountChange("10")
             advanceUntilIdle()
             repository.setMutationResult(
-                QuantityMutationResult.Failure(DomainError.AmountMustBeLowerThanCurrent),
+                QuantityMutationResult.Failure(DomainError.AmountExceedsCurrent),
             )
 
             viewModel.onConfirm()
@@ -541,7 +541,7 @@ class InventoryViewModelTest {
 
             val state = viewModel.uiState.value as InventoryUiState.Content
             val action = state.quantityAction as QuantityActionUiState.ConsumeEditing
-            assertEquals(QuantityActionError.MUST_BE_LOWER_THAN_CURRENT, action.error)
+            assertEquals(QuantityActionError.EXCEEDS_CURRENT, action.error)
             job.cancel()
         }
 
@@ -569,7 +569,7 @@ class InventoryViewModelTest {
             viewModel.onAmountChange("11")
             advanceUntilIdle()
             repository.setMutationResult(
-                QuantityMutationResult.Failure(DomainError.AmountMustBeLowerThanCurrent),
+                QuantityMutationResult.Failure(DomainError.AmountExceedsCurrent),
             )
 
             viewModel.onConfirm()
@@ -577,7 +577,7 @@ class InventoryViewModelTest {
 
             val state = viewModel.uiState.value as InventoryUiState.Content
             val action = state.quantityAction as QuantityActionUiState.ConsumeEditing
-            assertEquals(QuantityActionError.MUST_BE_LOWER_THAN_CURRENT, action.error)
+            assertEquals(QuantityActionError.EXCEEDS_CURRENT, action.error)
             job.cancel()
         }
 

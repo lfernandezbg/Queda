@@ -39,6 +39,9 @@ secrets.properties
 maestro-results/
 .maestro/results/
 benchmark-results/
+maestro-report*.xml
+capturas_pantalla/
+capturas_pantalla_queda/
 
 # Archives generated for reviews
 *.zip

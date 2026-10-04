@@ -20,6 +20,8 @@ sealed interface AddExactInventoryItemResult {
 
     data object DuplicateBarcode : AddExactInventoryItemResult
 
+    data object InvalidDetails : AddExactInventoryItemResult
+
     data object StorageFailure : AddExactInventoryItemResult
 }
 

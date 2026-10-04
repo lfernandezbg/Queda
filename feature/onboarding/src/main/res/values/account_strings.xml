@@ -1,0 +1,17 @@
+<resources>
+    <string name="account_welcome">Entra en Queda</string>
+    <string name="account_email">Correo electrónico</string>
+    <string name="account_password">Contraseña</string>
+    <string name="account_enter">Entrar</string>
+    <string name="account_register">Crear cuenta</string>
+    <string name="account_recover">Recuperar contraseña</string>
+    <string name="account_back">Volver a entrar</string>
+    <string name="account_send_reset">Enviar enlace</string>
+    <string name="account_show_password">Mostrar contraseña</string>
+    <string name="account_hide_password">Ocultar contraseña</string>
+    <string name="account_wait">Un momento…</string>
+    <string name="account_recovery_sent">Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Revisa también el correo no deseado.</string>
+    <string name="account_invalid">Revisa el correo y la contraseña.</string>
+    <string name="account_rejected">No se pudo completar la operación. Revisa los datos e inténtalo de nuevo.</string>
+    <string name="account_unavailable">No hay conexión con el servicio. Inténtalo de nuevo cuando tengas conexión.</string>
+</resources>

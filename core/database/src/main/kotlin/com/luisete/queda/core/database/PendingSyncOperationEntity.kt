@@ -1,5 +1,6 @@
 package com.luisete.queda.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -15,4 +16,5 @@ data class PendingSyncOperationEntity(
     val action: String,
     val payload: String,
     val createdAt: Long,
+    @ColumnInfo(defaultValue = "''") val batchId: String = "",
 )

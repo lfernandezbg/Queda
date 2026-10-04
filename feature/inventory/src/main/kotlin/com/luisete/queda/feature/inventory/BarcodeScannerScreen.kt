@@ -23,6 +23,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -67,6 +70,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.luisete.queda.core.designsystem.component.QuedaChoiceChip
 import com.luisete.queda.core.designsystem.component.QuedaIconButton
 import com.luisete.queda.core.designsystem.component.QuedaPrimaryButton
 import com.luisete.queda.core.designsystem.component.QuedaScaffold
@@ -175,6 +179,7 @@ fun BarcodeScannerRoute(
         saveError = saveError,
         isSaving = isSaving,
         onModeChange = viewModel::setContinuousMode,
+        onLotSelected = viewModel::selectLot,
         onSkip = viewModel::resume,
         onSave = { pending, name, quantity, unit -> continuousSession?.save(pending, name, quantity, unit) },
         onRetryPermission = requestPermission,
@@ -220,6 +225,7 @@ fun BarcodeScannerScreen(
     saveError: Boolean = false,
     isSaving: Boolean = false,
     onModeChange: (Boolean) -> Unit = {},
+    onLotSelected: (String) -> Unit = {},
     onSkip: () -> Unit = {},
     onSave: (PendingScan, String, String, MeasurementUnit) -> Unit = { _, _, _, _ -> },
 ) {
@@ -242,22 +248,62 @@ fun BarcodeScannerScreen(
                 cameraPreviewSlot = cameraPreviewSlot,
             )
             if (uiState.permissionState == PermissionState.GRANTED && continuousAvailable) {
-                Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(QuedaSpacing.Medium)) {
-                    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(QuedaSpacing.Small)) {
-                        OutlinedButton(onClick = { onModeChange(false) }, enabled = uiState.continuousMode) {
-                            Text(stringResource(R.string.scan_single))
+                Surface(
+                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(QuedaSpacing.Medium),
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = MaterialTheme.shapes.medium,
+                ) {
+                    Column(Modifier.padding(QuedaSpacing.Medium)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(QuedaSpacing.Small)) {
+                            QuedaChoiceChip(
+                                stringResource(R.string.scan_single),
+                                !uiState.continuousMode,
+                                { onModeChange(false) },
+                                Modifier.testTag("scan_mode_single"),
+                            )
+                            QuedaChoiceChip(
+                                stringResource(R.string.scan_continuous),
+                                uiState.continuousMode,
+                                { onModeChange(true) },
+                                Modifier.testTag("scan_mode_continuous"),
+                            )
                         }
-                        OutlinedButton(onClick = { onModeChange(true) }, enabled = !uiState.continuousMode) {
-                            Text(stringResource(R.string.scan_continuous))
+                        Text(stringResource(if (uiState.continuousMode) R.string.scan_continuous_help else R.string.scan_single_help))
+                        if (uiState.continuousMode) {
+                            Text(
+                                pluralStringResource(
+                                    R.plurals.scan_saved_count,
+                                    savedCount,
+                                    savedCount,
+                                ),
+                            )
                         }
                     }
-                    if (uiState.continuousMode) Text(pluralStringResource(R.plurals.scan_saved_count, savedCount, savedCount))
                 }
                 uiState.pendingScan?.let { pending ->
                     ContinuousReview(pending, saveError, isSaving, onSave, onSkip)
                 }
             }
         }
+    }
+    if (uiState.lotChoices.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = onSkip,
+            title = { Text(stringResource(R.string.scan_choose_lot)) },
+            text = {
+                Column {
+                    uiState.lotChoices.forEach { lot ->
+                        OutlinedButton(
+                            onClick = { onLotSelected(lot.stockItemId) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(lot.name + " · " + lot.description) }
+                    }
+                }
+            },
+            confirmButton = {
+                OutlinedButton(onClick = onSkip) { Text(stringResource(R.string.scan_skip)) }
+            },
+        )
     }
 }
 
@@ -273,7 +319,10 @@ private fun ContinuousReview(
     var name by remember(pending) { mutableStateOf((pending as? PendingScan.New)?.suggestedName.orEmpty()) }
     var amount by remember(pending) { mutableStateOf("1") }
     var unit by remember(pending) { mutableStateOf(MeasurementUnit.UNIT) }
-    ModalBottomSheet(onDismissRequest = { if (!isSaving) onSkip() }, modifier = Modifier.testTag("continuous_scan_review")) {
+    ModalBottomSheet(
+        onDismissRequest = { if (!isSaving) onSkip() },
+        modifier = Modifier.testTag("continuous_scan_review"),
+    ) {
         Column(Modifier.fillMaxWidth().semantics { testTagsAsResourceId = true }.padding(QuedaSpacing.Large)) {
             Text(stringResource(R.string.scan_review_title), style = MaterialTheme.typography.headlineSmall)
             if (pending is PendingScan.New) {
@@ -303,6 +352,7 @@ private fun ContinuousReview(
                         MeasurementUnit.KILOGRAM,
                         MeasurementUnit.MILLILITER,
                         MeasurementUnit.LITER,
+                        MeasurementUnit.RATION,
                     ).forEach {
                             option ->
                         val label =
@@ -312,8 +362,12 @@ private fun ContinuousReview(
                                 MeasurementUnit.KILOGRAM -> R.string.unit_abbreviation_kilogram
                                 MeasurementUnit.MILLILITER -> R.string.unit_abbreviation_milliliter
                                 MeasurementUnit.LITER -> R.string.unit_abbreviation_liter
+                                MeasurementUnit.RATION -> R.string.unit_abbreviation_ration
                             }
-                        OutlinedButton(onClick = { unit = option }, enabled = unit != option) { Text(stringResource(label)) }
+                        OutlinedButton(
+                            onClick = { unit = option },
+                            enabled = unit != option,
+                        ) { Text(stringResource(label)) }
                     }
                 }
             }

@@ -117,8 +117,8 @@ object QuantityOperations {
                         toConsume.unit,
                     )
 
-                if (consumptionInBase >= availableInBase) {
-                    Failure(DomainError.AmountMustBeLowerThanCurrent)
+                if (consumptionInBase > availableInBase) {
+                    Failure(DomainError.AmountExceedsCurrent)
                 } else {
                     resolveMixedResult(
                         amountInBase = availableInBase.subtract(consumptionInBase),
@@ -252,5 +252,8 @@ object QuantityOperations {
 
             QuantityDimension.VOLUME ->
                 MeasurementUnit.MILLILITER
+
+            QuantityDimension.PORTION ->
+                MeasurementUnit.RATION
         }
 }

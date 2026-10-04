@@ -41,7 +41,7 @@ sealed interface DomainError {
     data object AmountMustBePositive :
         DomainError
 
-    data object AmountMustBeLowerThanCurrent :
+    data object AmountExceedsCurrent :
         DomainError
 
     data object IncompatibleMode :

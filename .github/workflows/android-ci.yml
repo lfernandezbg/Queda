@@ -91,5 +91,5 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - run: npm install --prefix firebase-tests --no-audit --no-fund --no-package-lock
+      - run: npm ci --prefix firebase-tests --no-audit --no-fund
       - run: npx --yes firebase-tools@15.30.0 emulators:exec --only firestore --project demo-queda-s1 "npm --prefix firebase-tests test"

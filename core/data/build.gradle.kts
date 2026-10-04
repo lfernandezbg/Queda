@@ -12,6 +12,8 @@ android {
 
 dependencies {
     implementation(platform(libs.firebase.bom))
+    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(project(":core:model"))

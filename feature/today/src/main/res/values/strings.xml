@@ -6,4 +6,8 @@
     <string name="today_open_shopping">Abrir la lista</string>
     <string name="today_open_inventory">Ver inventario</string>
     <string name="today_at_home">En casa</string>
+    <string name="today_upcoming">Con fecha próxima</string>
+    <string name="today_prepared">Preparados recientes</string>
+    <string name="today_before">Consumir antes: %1$s</string>
+    <string name="today_prepared_on">Preparado: %1$s</string>
 </resources>

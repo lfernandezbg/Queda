@@ -341,13 +341,23 @@ class QuantityOperationsTests {
         )
     }
 
-    @Test fun consumeTotalSameUnit() {
+    @Test fun consumeTotalSameUnitLeavesZero() {
         assertEquals(
-            DomainError.AmountMustBeLowerThanCurrent,
+            ExactQuantity.of("0", MeasurementUnit.UNIT),
             QuantityOperations.consume(
                 ExactQuantity.of("10", MeasurementUnit.UNIT),
                 ExactQuantity.of("10", MeasurementUnit.UNIT),
-            ).failureError(),
+            ).successValue(),
+        )
+    }
+
+    @Test fun consumeTotalUsingCanonicalMassConversionLeavesZero() {
+        assertEquals(
+            ExactQuantity.of("0", MeasurementUnit.KILOGRAM),
+            QuantityOperations.consume(
+                ExactQuantity.of("1", MeasurementUnit.KILOGRAM),
+                ExactQuantity.of("1000", MeasurementUnit.GRAM),
+            ).successValue(),
         )
     }
 
@@ -391,9 +401,9 @@ class QuantityOperationsTests {
         )
     }
 
-    @Test fun consumeMoreThanAvailableReturnsAmountMustBeLowerThanCurrent() {
+    @Test fun consumeMoreThanAvailableReturnsAmountExceedsCurrent() {
         assertEquals(
-            DomainError.AmountMustBeLowerThanCurrent,
+            DomainError.AmountExceedsCurrent,
             QuantityOperations.consume(
                 ExactQuantity.of("100", MeasurementUnit.GRAM),
                 ExactQuantity.of("200", MeasurementUnit.GRAM),

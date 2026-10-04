@@ -1,5 +1,6 @@
 package com.luisete.queda.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -28,4 +29,9 @@ data class StockItemEntity(
     val quantityAmount: String?,
     val quantityUnit: String?,
     val isPresent: Boolean?,
+    @ColumnInfo(defaultValue = "NULL") val locationId: String? = null,
+    @ColumnInfo(defaultValue = "'FOOD'") val foodType: String = "FOOD",
+    @ColumnInfo(defaultValue = "NULL") val label: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val preparedOn: String? = null,
+    @ColumnInfo(defaultValue = "NULL") val bestBefore: String? = null,
 )

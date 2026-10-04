@@ -1,0 +1,52 @@
+appId: com.luisete.queda.e2e
+---
+- openLink: "queda-e2e://reset"
+- extendedWaitUntil:
+    visible:
+      id: "inventory_add_button"
+    timeout: 30000
+- tapOn:
+    id: "inventory_add_button"
+- tapOn:
+    id: "add_exact_item_name_input"
+- inputText: "Pan completo"
+- tapOn:
+    id: "add_exact_item_quantity_input"
+- inputText: "2"
+- hideKeyboard
+- tapOn:
+    id: "add_exact_item_save_button"
+- extendedWaitUntil:
+    visible: "2 ud"
+    timeout: 30000
+- tapOn: "Pan completo"
+- extendedWaitUntil:
+    visible: "Consumir"
+    timeout: 30000
+- tapOn: "Consumir"
+- tapOn: "Cantidad"
+- inputText: "2"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Quedarán 0 ud"
+    timeout: 30000
+- tapOn: "Consumir"
+- tapOn: "Mostrar agotados"
+- extendedWaitUntil:
+    visible: "Pan completo"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "0 ud"
+    timeout: 30000
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: "Mostrar agotados"
+    timeout: 30000
+- tapOn: "Mostrar agotados"
+- extendedWaitUntil:
+    visible: "Pan completo"
+    timeout: 30000
+- extendedWaitUntil:
+    visible: "0 ud"
+    timeout: 30000

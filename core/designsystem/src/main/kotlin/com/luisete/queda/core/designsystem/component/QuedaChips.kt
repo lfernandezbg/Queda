@@ -3,6 +3,7 @@
 package com.luisete.queda.core.designsystem.component
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
@@ -12,6 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.luisete.queda.core.designsystem.theme.QuedaSpacing
+
+@Composable
+@Suppress("FunctionNaming")
+fun QuedaChoiceChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FilterChip(selected = selected, onClick = onClick, label = { Text(label) }, modifier = modifier)
+}
 
 @Composable
 @Suppress("FunctionNaming")

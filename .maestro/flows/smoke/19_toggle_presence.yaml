@@ -10,10 +10,16 @@ appId: com.luisete.queda.e2e
 - extendedWaitUntil:
     notVisible:
       id: "presence_action_sheet"
+- tapOn: "Mostrar agotados"
+- extendedWaitUntil:
+    visible: "Salt"
 - extendedWaitUntil:
     visible: "No hay"
 - stopApp
 - launchApp
+- tapOn: "Mostrar agotados"
+- extendedWaitUntil:
+    visible: "Salt"
 - extendedWaitUntil:
     visible: "No hay"
 - tapOn: "Salt"

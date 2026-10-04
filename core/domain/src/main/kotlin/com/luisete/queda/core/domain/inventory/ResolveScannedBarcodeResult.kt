@@ -2,6 +2,7 @@ package com.luisete.queda.core.domain.inventory
 
 import com.luisete.queda.core.model.barcode.Barcode
 import com.luisete.queda.core.model.id.StockItemId
+import com.luisete.queda.core.model.inventory.InventoryItem
 import com.luisete.queda.core.model.quantity.StockQuantity
 
 sealed interface ResolveScannedBarcodeResult {
@@ -11,6 +12,7 @@ sealed interface ResolveScannedBarcodeResult {
         val stockItemId: StockItemId,
         val name: String? = null,
         val quantity: StockQuantity? = null,
+        val candidates: List<InventoryItem> = emptyList(),
     ) : ResolveScannedBarcodeResult
 
     data class InvalidBarcode(val reason: BarcodeValidationError) : ResolveScannedBarcodeResult

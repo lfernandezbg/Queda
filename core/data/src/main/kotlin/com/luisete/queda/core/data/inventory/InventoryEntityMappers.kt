@@ -8,7 +8,9 @@ import com.luisete.queda.core.model.barcode.BarcodeCreationResult
 import com.luisete.queda.core.model.id.HouseholdId
 import com.luisete.queda.core.model.id.ProductId
 import com.luisete.queda.core.model.id.StockItemId
+import com.luisete.queda.core.model.inventory.FoodType
 import com.luisete.queda.core.model.inventory.InventoryItem
+import com.luisete.queda.core.model.inventory.StockDetails
 import com.luisete.queda.core.model.inventory.StockItem
 import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.product.Product
@@ -17,7 +19,9 @@ import com.luisete.queda.core.model.product.ProductNameCreationResult
 import com.luisete.queda.core.model.quantity.ExactQuantity
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import com.luisete.queda.core.model.quantity.PresenceQuantity
+import com.luisete.queda.core.model.quantity.StockQuantity
 import java.math.BigDecimal
+import java.time.LocalDate
 
 fun Product.toEntity(): ProductEntity =
     ProductEntity(
@@ -39,6 +43,8 @@ fun StockItem.toEntity(): StockItemEntity =
                 quantityAmount = q.amount.toPlainString(),
                 quantityUnit = q.unit.name,
                 isPresent = null,
+                locationId = details.locationId, foodType = details.foodType.name, label = details.label,
+                preparedOn = details.preparedOn?.toString(), bestBefore = details.bestBefore?.toString(),
             )
 
         is PresenceQuantity ->
@@ -50,6 +56,8 @@ fun StockItem.toEntity(): StockItemEntity =
                 quantityAmount = null,
                 quantityUnit = null,
                 isPresent = q.isPresent,
+                locationId = details.locationId, foodType = details.foodType.name, label = details.label,
+                preparedOn = details.preparedOn?.toString(), bestBefore = details.bestBefore?.toString(),
             )
 
         else -> error("Quantity type ${q::class.simpleName} is not supported in persistence")
@@ -67,6 +75,14 @@ fun InventoryItemProjection.toDomain(): InventoryItem {
             householdId = HouseholdId.from(stockHouseholdId),
             productId = ProductId.from(stockProductId),
             quantity = quantity,
+            details =
+                StockDetails(
+                    locationId,
+                    FoodType.valueOf(foodType),
+                    label,
+                    preparedOn?.let(LocalDate::parse),
+                    bestBefore?.let(LocalDate::parse),
+                ),
         )
 
     return InventoryItem(productDomain, stockItemDomain)
@@ -103,7 +119,7 @@ private fun InventoryItemProjection.toProductDomain(): Product {
     )
 }
 
-private fun InventoryItemProjection.toQuantityDomain(): com.luisete.queda.core.model.quantity.StockQuantity =
+private fun InventoryItemProjection.toQuantityDomain(): StockQuantity =
     when (trackingMode) {
         StockTrackingMode.EXACT.name -> {
             val amount =

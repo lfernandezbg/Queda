@@ -12,8 +12,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PendingSyncOperationEntity::class,
         ShoppingEntryEntity::class,
         PendingShoppingOperationEntity::class,
+        LocationEntity::class,
+        ReceiptDraftEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class QuedaDatabase : RoomDatabase() {
@@ -23,7 +25,17 @@ abstract class QuedaDatabase : RoomDatabase() {
 
     abstract fun shoppingDao(): ShoppingDao
 
+    abstract fun managementDao(): ManagementDao
+
     companion object {
+        private const val DB_VERSION_6 = 6
+        val MIGRATION_5_6 =
+            object : Migration(DB_VERSION_5, DB_VERSION_6) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    StockMigration.migrate(db)
+                }
+            }
+
         private const val DB_VERSION_1 = 1
         private const val DB_VERSION_2 = 2
         private const val DB_VERSION_3 = 3

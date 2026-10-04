@@ -7,6 +7,7 @@
 package com.luisete.queda.feature.inventory
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,6 +56,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.luisete.queda.core.designsystem.component.QuedaBottomActionBar
@@ -68,6 +70,8 @@ import com.luisete.queda.core.designsystem.component.QuedaTextField
 import com.luisete.queda.core.designsystem.component.QuedaTopAppBar
 import com.luisete.queda.core.designsystem.theme.QuedaSpacing
 import com.luisete.queda.core.designsystem.theme.QuedaTheme
+import com.luisete.queda.core.domain.inventory.StockWriteResult
+import com.luisete.queda.core.model.inventory.FoodType
 import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import kotlinx.coroutines.delay
@@ -79,7 +83,18 @@ private const val FOCUS_REQUEST_DELAY = 100L
 fun AddExactItemRoute(
     viewModel: AddExactItemViewModel,
     onBack: () -> Unit,
+    management: StockManagementViewModel? = null,
 ) {
+    val metadata = management?.state?.collectAsStateWithLifecycle()?.value
+    val locations = management?.locations?.collectAsStateWithLifecycle()?.value.orEmpty()
+    LaunchedEffect(metadata?.result) {
+        if (metadata?.result == StockWriteResult.SAVED) onBack()
+    }
+    LaunchedEffect(metadata?.form?.foodType) {
+        if (metadata?.form?.foodType == FoodType.PREPARED) {
+            viewModel.onTrackingModeChange(StockTrackingMode.EXACT)
+        }
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel.successEvent) {
@@ -89,13 +104,26 @@ fun AddExactItemRoute(
     }
 
     AddExactItemScreen(
-        uiState = uiState,
+        uiState = uiState.copy(isSaving = uiState.isSaving || metadata?.busy == true),
         onNameChange = viewModel::onNameChange,
         onQuantityChange = viewModel::onQuantityChange,
         onUnitChange = viewModel::onUnitChange,
         onTrackingModeChange = viewModel::onTrackingModeChange,
-        onSave = viewModel::save,
+        onSave = {
+            if (management == null) {
+                viewModel.save()
+            } else {
+                management.submitAdd(uiState.nameInput, uiState.quantityInput, uiState.selectedUnit, viewModel::save)
+            }
+        },
         onCancel = onBack,
+        prepared = metadata?.form?.foodType == FoodType.PREPARED,
+        metadata = {
+            if (management != null && metadata != null) {
+                StockMetadataForm(metadata.form, locations, management::form)
+                StockResultText(metadata.result)
+            }
+        },
     )
 }
 
@@ -109,6 +137,8 @@ fun AddExactItemScreen(
     onTrackingModeChange: (StockTrackingMode) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
+    metadata: @Composable () -> Unit = {},
+    prepared: Boolean = false,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -139,6 +169,8 @@ fun AddExactItemScreen(
             onTrackingModeChange = onTrackingModeChange,
             onNext = { focusManager.moveFocus(FocusDirection.Down) },
             onDone = { focusManager.clearFocus() },
+            metadata = metadata,
+            prepared = prepared,
         )
     }
 }
@@ -174,6 +206,8 @@ private fun AddExactItemContent(
     onTrackingModeChange: (StockTrackingMode) -> Unit,
     onNext: () -> Unit,
     onDone: () -> Unit,
+    metadata: @Composable () -> Unit,
+    prepared: Boolean,
 ) {
     Column(
         modifier =
@@ -193,7 +227,10 @@ private fun AddExactItemContent(
             onTrackingModeChange = onTrackingModeChange,
             onNext = onNext,
             onDone = onDone,
+            prepared = prepared,
         )
+        metadata()
+        if (uiState.metadataError) StockResultText(StockWriteResult.INVALID)
     }
 }
 
@@ -247,6 +284,7 @@ private fun AddExactItemForm(
     onTrackingModeChange: (StockTrackingMode) -> Unit,
     onNext: () -> Unit,
     onDone: () -> Unit,
+    prepared: Boolean,
 ) {
     NameField(
         input = uiState.nameInput,
@@ -287,11 +325,13 @@ private fun AddExactItemForm(
 
     Spacer(modifier = Modifier.height(QuedaSpacing.Medium))
 
-    TrackingModeSelector(
-        selectedMode = uiState.trackingMode,
-        onModeChange = onTrackingModeChange,
-        enabled = !uiState.isSaving,
-    )
+    if (!prepared) {
+        TrackingModeSelector(
+            selectedMode = uiState.trackingMode,
+            onModeChange = onTrackingModeChange,
+            enabled = !uiState.isSaving,
+        )
+    }
 
     if (uiState.trackingMode == StockTrackingMode.EXACT) {
         ExactQuantityFields(
@@ -517,7 +557,7 @@ private fun TrackingModeOption(
         shape = MaterialTheme.shapes.small,
         color = backgroundColor,
         contentColor = contentColor,
-        border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, borderColor) else null,
+        border = if (selected) BorderStroke(1.dp, borderColor) else null,
     ) {
         Text(
             text = text,
@@ -545,6 +585,7 @@ fun UnitSelector(
             MeasurementUnit.KILOGRAM to R.string.unit_kilograms,
             MeasurementUnit.MILLILITER to R.string.unit_milliliters,
             MeasurementUnit.LITER to R.string.unit_liters,
+            MeasurementUnit.RATION to R.string.unit_rations,
         )
 
     Column(
@@ -621,6 +662,7 @@ private fun UnitSheetContent(
                     MeasurementUnit.MILLILITER ->
                         InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_MILLILITER
                     MeasurementUnit.LITER -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_LITER
+                    MeasurementUnit.RATION -> InventoryTestTags.ADD_EXACT_ITEM_UNIT_OPTION_RATION
                 }
             Row(
                 modifier =
@@ -661,7 +703,7 @@ private fun UnitSheetContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(
+@Preview(
     showBackground = true,
     name = "Add Exact Item",
     group = "Inventory",

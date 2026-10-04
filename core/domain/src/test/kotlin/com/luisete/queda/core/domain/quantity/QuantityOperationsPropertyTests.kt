@@ -406,6 +406,7 @@ class QuantityOperationsPropertyTests {
             QuantityDimension.MASS -> MeasurementUnit.GRAM
             QuantityDimension.VOLUME -> MeasurementUnit.MILLILITER
             QuantityDimension.COUNT -> MeasurementUnit.UNIT
+            QuantityDimension.PORTION -> MeasurementUnit.RATION
         }
 
     private infix fun Int.shouldBeGreaterOrEqualTo(other: Int) {

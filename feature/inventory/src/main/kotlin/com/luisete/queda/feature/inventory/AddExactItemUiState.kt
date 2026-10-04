@@ -14,6 +14,7 @@ data class AddExactItemUiState(
     val quantityError: QuantityInputError? = null,
     val duplicateError: Boolean = false,
     val duplicateBarcodeError: Boolean = false,
+    val metadataError: Boolean = false,
     val storageError: Boolean = false,
     val isSaving: Boolean = false,
 )

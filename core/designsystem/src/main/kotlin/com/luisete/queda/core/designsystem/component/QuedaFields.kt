@@ -30,6 +30,7 @@ fun QuedaTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     OutlinedTextField(
         value = value,
@@ -51,6 +52,7 @@ fun QuedaTextField(
         keyboardActions = keyboardActions,
         singleLine = singleLine,
         visualTransformation = visualTransformation,
+        trailingIcon = trailingIcon,
         shape = MaterialTheme.shapes.medium,
     )
 }

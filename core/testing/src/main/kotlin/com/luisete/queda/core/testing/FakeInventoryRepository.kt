@@ -133,9 +133,9 @@ class FakeInventoryRepository : InventoryRepository {
     override suspend fun findItemByBarcode(barcode: Barcode): FindItemByBarcodeResult {
         findItemByBarcodeCalls.add(barcode)
         findResult?.let { return it }
-        val item = itemsFlow.replayCache.firstOrNull()?.find { it.product.barcode == barcode }
-        return if (item != null) {
-            FindItemByBarcodeResult.Found(item)
+        val candidates = itemsFlow.replayCache.firstOrNull()?.filter { it.product.barcode == barcode }.orEmpty()
+        return if (candidates.isNotEmpty()) {
+            FindItemByBarcodeResult.Found(candidates.first(), candidates)
         } else {
             FindItemByBarcodeResult.NotFound
         }

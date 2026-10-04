@@ -187,7 +187,7 @@ class OfflineInventoryRepositoryTest {
                 )
 
             assertTrue(result is QuantityMutationResult.Failure)
-            assertEquals(DomainError.AmountMustBeLowerThanCurrent, (result as QuantityMutationResult.Failure).error)
+            assertEquals(DomainError.AmountExceedsCurrent, (result as QuantityMutationResult.Failure).error)
 
             val persisted = dao.getStockItemById(sid)
             assertEquals("10", persisted?.quantityAmount)
@@ -260,7 +260,10 @@ class OfflineInventoryRepositoryTest {
             val result = repository.setPresence(StockItemId.from(sid), false)
 
             assertTrue(result is QuantityMutationResult.Success)
-            assertEquals(false, (result as QuantityMutationResult.Success).newQuantity.let { (it as PresenceQuantity).isPresent })
+            assertEquals(
+                false,
+                (result as QuantityMutationResult.Success).newQuantity.let { (it as PresenceQuantity).isPresent },
+            )
 
             val persisted = dao.getStockItemById(sid)
             assertEquals(false, persisted?.isPresent)
@@ -281,7 +284,7 @@ class OfflineInventoryRepositoryTest {
 
     private fun <T> Any.getOrThrow(): T =
         when (this) {
-            is com.luisete.queda.core.model.barcode.BarcodeCreationResult.Success -> barcode as T
+            is BarcodeCreationResult.Success -> barcode as T
             else -> throw IllegalArgumentException("Result is not success")
         }
 }

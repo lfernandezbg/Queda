@@ -8,4 +8,5 @@ enum class MeasurementUnit(
     KILOGRAM(QuantityDimension.MASS),
     MILLILITER(QuantityDimension.VOLUME),
     LITER(QuantityDimension.VOLUME),
+    RATION(QuantityDimension.PORTION),
 }

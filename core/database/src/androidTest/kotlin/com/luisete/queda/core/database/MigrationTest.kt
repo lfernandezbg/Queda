@@ -25,6 +25,28 @@ class MigrationTest {
         )
 
     @Test
+    fun migrate5To6PreservesStockAndPendingOperations() {
+        helper.createDatabase(testDb, 5).use { db ->
+            db.execSQL("INSERT INTO products VALUES ('p', 'h', 'Pan', 'pan', NULL)")
+            db.execSQL("INSERT INTO stock_items VALUES ('s', 'h', 'p', 'EXACT', '2', 'UNIT', NULL)")
+            db.execSQL("INSERT INTO pending_sync_operations VALUES ('op', 'h', 's', 'CONSUME', '{}', 1)")
+        }
+        helper.runMigrationsAndValidate(testDb, 6, true, QuedaDatabase.MIGRATION_5_6).use { db ->
+            db.query("SELECT quantityAmount, foodType, locationId FROM stock_items WHERE id = 's'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("2", cursor.getString(0))
+                assertEquals("FOOD", cursor.getString(1))
+                assertTrue(cursor.isNull(2))
+            }
+            db.query("SELECT action, batchId FROM pending_sync_operations WHERE id = 'op'").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("CONSUME", cursor.getString(0))
+                assertEquals("", cursor.getString(1))
+            }
+        }
+    }
+
+    @Test
     @Throws(IOException::class)
     fun migrate4To5_preservesInventoryAndCreatesShoppingTables() {
         helper.createDatabase(testDb, 4).use { db ->

@@ -13,4 +13,9 @@ data class InventoryItemProjection(
     val quantityAmount: String?,
     val quantityUnit: String?,
     val isPresent: Boolean?,
+    val locationId: String? = null,
+    val foodType: String = "FOOD",
+    val label: String? = null,
+    val preparedOn: String? = null,
+    val bestBefore: String? = null,
 )

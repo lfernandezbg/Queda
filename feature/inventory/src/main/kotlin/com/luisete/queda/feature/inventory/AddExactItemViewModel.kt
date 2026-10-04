@@ -7,6 +7,7 @@ import com.luisete.queda.core.domain.inventory.AddExactInventoryItemResult
 import com.luisete.queda.core.domain.inventory.AddExactInventoryItemUseCase
 import com.luisete.queda.core.domain.inventory.ExactQuantityInputError
 import com.luisete.queda.core.domain.inventory.ProductNameCreationError
+import com.luisete.queda.core.model.inventory.StockDetails
 import com.luisete.queda.core.model.inventory.StockTrackingMode
 import com.luisete.queda.core.model.quantity.MeasurementUnit
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,6 +54,7 @@ class AddExactItemViewModel
                     duplicateError = false,
                     duplicateBarcodeError = false,
                     storageError = false,
+                    metadataError = false,
                 )
             }
         }
@@ -65,6 +67,7 @@ class AddExactItemViewModel
                     quantityError = null,
                     duplicateBarcodeError = false,
                     storageError = false,
+                    metadataError = false,
                 )
             }
         }
@@ -106,7 +109,7 @@ class AddExactItemViewModel
         }
 
         @Suppress("LongMethod")
-        fun save() {
+        fun save(details: StockDetails = StockDetails()) {
             if (mutableUiState.value.isSaving) return
 
             mutableUiState.update {
@@ -117,6 +120,7 @@ class AddExactItemViewModel
                     duplicateError = false,
                     duplicateBarcodeError = false,
                     storageError = false,
+                    metadataError = false,
                 )
             }
 
@@ -128,6 +132,7 @@ class AddExactItemViewModel
                         unit = mutableUiState.value.selectedUnit,
                         rawBarcode = mutableUiState.value.barcode,
                         trackingMode = mutableUiState.value.trackingMode,
+                        details = details,
                     )
 
                 when (result) {
@@ -162,6 +167,10 @@ class AddExactItemViewModel
                                 duplicateBarcodeError = true,
                             )
                         }
+                    }
+
+                    AddExactInventoryItemResult.InvalidDetails -> {
+                        mutableUiState.update { it.copy(isSaving = false, metadataError = true) }
                     }
 
                     AddExactInventoryItemResult.StorageFailure -> {

@@ -5,6 +5,7 @@ import com.luisete.queda.core.domain.inventory.ExternalProductResult
 import com.luisete.queda.core.domain.inventory.FindItemByBarcodeResult
 import com.luisete.queda.core.domain.inventory.ResolveScannedBarcodeUseCase
 import com.luisete.queda.core.model.barcode.Barcode
+import com.luisete.queda.core.model.id.StockItemId
 import com.luisete.queda.core.testing.FakeInventoryRepository
 import com.luisete.queda.core.testing.InventoryTestData
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -42,6 +44,25 @@ class BarcodeScannerViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun `continuous duplicate remains blocked until the camera sees no barcode`() =
+        runTest {
+            viewModel.setContinuousMode(true)
+            viewModel.onBarcodeDetected("4006381333931")
+            advanceUntilIdle()
+            viewModel.resume()
+            advanceTimeBy(10_000)
+            viewModel.onBarcodeDetected("4006381333931")
+            advanceUntilIdle()
+            assertEquals(1, externalLookup.calls)
+            assertEquals(null, viewModel.uiState.value.pendingScan)
+            viewModel.onBarcodeDetected("")
+            viewModel.onBarcodeDetected("4006381333931")
+            advanceUntilIdle()
+            assertEquals(2, externalLookup.calls)
+            assertTrue(viewModel.uiState.value.pendingScan is PendingScan.New)
+        }
 
     @Test
     fun `detected new barcode triggers exactly one navigation`() =
@@ -109,6 +130,26 @@ class BarcodeScannerViewModelTest {
             assertTrue(event is BarcodeScannerNavigationEvent.ToInventoryWithItem)
             assertEquals(item.stockItem.id.value, (event as BarcodeScannerNavigationEvent.ToInventoryWithItem).itemId)
             assertEquals(0, externalLookup.calls)
+        }
+
+    @Test
+    fun `barcode with two lots requires an explicit lot choice before navigation`() =
+        runTest {
+            val barcode = "4006381333931"
+            val old = InventoryTestData.createInventoryItem(barcode = barcode)
+            val recent = old.copy(stockItem = old.stockItem.copy(id = StockItemId.from("recent-lot")))
+            repository.emit(listOf(old, recent))
+
+            viewModel.onBarcodeDetected(barcode)
+            advanceUntilIdle()
+            assertEquals(2, viewModel.uiState.value.lotChoices.size)
+            assertFalse(viewModel.uiState.value.isProcessing)
+
+            viewModel.selectLot("recent-lot")
+            advanceUntilIdle()
+            val event = viewModel.navigationEvents.first() as BarcodeScannerNavigationEvent.ToInventoryWithItem
+            assertEquals("recent-lot", event.itemId)
+            assertTrue(viewModel.uiState.value.lotChoices.isEmpty())
         }
 
     @Test

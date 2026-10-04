@@ -27,12 +27,14 @@
     <string name="unit_kilograms">Kilogramos</string>
     <string name="unit_milliliters">Mililitros</string>
     <string name="unit_liters">Litros</string>
+    <string name="unit_rations">Raciones</string>
 
     <string name="unit_abbreviation_unit">ud</string>
     <string name="unit_abbreviation_gram">g</string>
     <string name="unit_abbreviation_kilogram">kg</string>
     <string name="unit_abbreviation_milliliter">ml</string>
     <string name="unit_abbreviation_liter">l</string>
+    <string name="unit_abbreviation_ration">raciones</string>
     <string name="inventory_quantity_format">%1$s %2$s</string>
 
     <string name="back">Volver</string>
@@ -78,7 +80,7 @@
     <string name="quantity_amount_label">Cantidad</string>
     <string name="quantity_consume_preview">Quedarán %1$s</string>
     <string name="quantity_correct_preview">Nueva cantidad: %1$s</string>
-    <string name="error_quantity_must_be_lower">La cantidad a consumir debe ser menor que la actual.</string>
+    <string name="error_quantity_exceeds_current">La cantidad a consumir no puede superar la actual.</string>
     <string name="error_incompatible_unit">La unidad no es compatible con el alimento.</string>
     <string name="error_quantity_unchanged">La nueva cantidad es igual a la actual.</string>
     <string name="error_product_not_found">El alimento ya no existe.</string>
@@ -104,4 +106,5 @@
     <string name="scan_save_continue">Guardar y seguir</string>
     <string name="scan_skip">Saltar producto</string>
     <string name="scan_save_error">Revisa nombre, cantidad y unidad; el alimento no se ha guardado.</string>
+    <string name="stock_consume_short">Consumir</string>
 </resources>

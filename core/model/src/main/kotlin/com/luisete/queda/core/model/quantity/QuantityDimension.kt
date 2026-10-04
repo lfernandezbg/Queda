@@ -4,4 +4,5 @@ enum class QuantityDimension {
     COUNT,
     MASS,
     VOLUME,
+    PORTION,
 }
