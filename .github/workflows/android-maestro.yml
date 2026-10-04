@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
-      fail-fast: true
+      fail-fast: false
       max-parallel: 8
       matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
     steps:
@@ -228,6 +228,9 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+
+      - name: Start ADB Server
+        run: adb start-server
 
       - name: Run Maestro Shard ${{ matrix.shard }}
         uses: reactivecircus/android-emulator-runner@v2
