@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -323,7 +325,13 @@ private fun ContinuousReview(
         onDismissRequest = { if (!isSaving) onSkip() },
         modifier = Modifier.testTag("continuous_scan_review"),
     ) {
-        Column(Modifier.fillMaxWidth().semantics { testTagsAsResourceId = true }.padding(QuedaSpacing.Large)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .semantics { testTagsAsResourceId = true }
+                .padding(QuedaSpacing.Large),
+        ) {
             Text(stringResource(R.string.scan_review_title), style = MaterialTheme.typography.headlineSmall)
             if (pending is PendingScan.New) {
                 Text(stringResource(R.string.add_exact_item_barcode_associated, pending.barcode))
