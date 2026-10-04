@@ -126,8 +126,6 @@ check_health() {
     echo "Error: Device health check failed after $MAX_RETRIES attempts."
     exit 1
 }
-    exit 1
-}
 
 check_health "initial"
 
