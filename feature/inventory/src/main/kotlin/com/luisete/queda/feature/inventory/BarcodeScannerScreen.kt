@@ -38,6 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -321,8 +322,10 @@ private fun ContinuousReview(
     var name by remember(pending) { mutableStateOf((pending as? PendingScan.New)?.suggestedName.orEmpty()) }
     var amount by remember(pending) { mutableStateOf("1") }
     var unit by remember(pending) { mutableStateOf(MeasurementUnit.UNIT) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = { if (!isSaving) onSkip() },
+        sheetState = sheetState,
         modifier =
             Modifier
                 .testTag("continuous_scan_review")

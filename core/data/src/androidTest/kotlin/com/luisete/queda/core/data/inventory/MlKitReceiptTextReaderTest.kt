@@ -8,7 +8,7 @@ import android.graphics.Paint
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import com.luisete.queda.core.domain.inventory.ReceiptRecognition
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,8 +16,8 @@ import java.io.File
 
 class MlKitReceiptTextReaderTest {
     @Test
-    fun bundledRecognizerReadsAnActualImageAndRequiresReview() =
-        runTest {
+    fun bundledRecognizerReadsAnActualImageAndRequiresReview(): Unit =
+        runBlocking {
             val context = ApplicationProvider.getApplicationContext<Context>()
             val bitmap = Bitmap.createBitmap(1500, 800, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
