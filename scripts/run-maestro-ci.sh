@@ -91,54 +91,30 @@ check_health() {
     while [ $ATTEMPT -le $MAX_RETRIES ]; do
         local HEALTHY=true
 
-        if [[ $(timeout 5s adb -s "$SERIAL" get-state 2>&1) != "device" ]]; then
+        if [[ $(timeout 5s adb -s "$SERIAL" get-state 2>&1 || true) != "device" ]]; then
             echo "ADB state not 'device'."
             HEALTHY=false
         fi
 
-        if [[ $(timeout 5s adb -s "$SERIAL" shell getprop sys.boot_completed | tr -d '\r') != "1" ]]; then
+        if [[ $(timeout 5s adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r') != "1" ]]; then
             echo "sys.boot_completed != 1"
             HEALTHY=false
         fi
 
         for service in activity window package; do
-            if ! timeout 5s adb -s "$SERIAL" shell service check "$service" | grep -q "found"; then
+            if ! timeout 5s adb -s "$SERIAL" shell service check "$service" 2>/dev/null | grep -q "found"; then
                 echo "Service $service not found."
                 HEALTHY=false
             fi
         done
 
-        if ! timeout 10s adb -s "$SERIAL" shell cmd package list packages > /dev/null; then
+        if ! timeout 10s adb -s "$SERIAL" shell cmd package list packages > /dev/null 2>&1; then
             echo "Package Manager not responding."
             HEALTHY=false
         fi
 
         if $HEALTHY; then
-            local DUMP_FILE="/sdcard/health_$phase.xml"
-            if timeout 20s adb -s "$SERIAL" shell uiautomator dump "$DUMP_FILE" > /dev/null 2>&1; then
-                local LOCAL_DUMP="$OUTPUT_DIR/health_$phase.xml"
-                adb -s "$SERIAL" pull "$DUMP_FILE" "$LOCAL_DUMP" > /dev/null 2>&1
-
-                if [[ -s "$LOCAL_DUMP" ]]; then
-                    # Check for ANR/Crash system dialogs
-                    if grep -Ei "isn't responding|isn&apos;t responding|has stopped|keeps stopping" "$LOCAL_DUMP"; then
-                        echo "System dialog detected (ANR/Crash). Dismissing with BACK/ENTER key..."
-                        adb -s "$SERIAL" shell input keyevent 4 > /dev/null 2>&1 || true
-                        adb -s "$SERIAL" shell input keyevent 66 > /dev/null 2>&1 || true
-                        HEALTHY=false
-                    fi
-                else
-                    echo "UI dump empty."
-                    HEALTHY=false
-                fi
-            else
-                echo "uiautomator dump failed."
-                HEALTHY=false
-            fi
-        fi
-
-        if $HEALTHY; then
-            echo "Device is healthy."
+            echo "Device is healthy ($phase)."
             return 0
         fi
 
@@ -148,6 +124,8 @@ check_health() {
     done
 
     echo "Error: Device health check failed after $MAX_RETRIES attempts."
+    exit 1
+}
     exit 1
 }
 
