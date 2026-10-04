@@ -229,9 +229,6 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Start ADB Server
-        run: adb start-server
-
       - name: Run Maestro Shard ${{ matrix.shard }}
         uses: reactivecircus/android-emulator-runner@v2
         env:
