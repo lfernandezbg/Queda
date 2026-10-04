@@ -323,7 +323,10 @@ private fun ContinuousReview(
     var unit by remember(pending) { mutableStateOf(MeasurementUnit.UNIT) }
     ModalBottomSheet(
         onDismissRequest = { if (!isSaving) onSkip() },
-        modifier = Modifier.testTag("continuous_scan_review"),
+        modifier =
+            Modifier
+                .testTag("continuous_scan_review")
+                .semantics { testTagsAsResourceId = true },
     ) {
         Column(
             Modifier

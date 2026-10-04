@@ -6,10 +6,6 @@ appId: com.luisete.queda.e2e
     visible: "Revisa y sigue"
     timeout: 30000
 - assertVisible: "Revisa y sigue"
-- extendedWaitUntil:
-    visible:
-      id: "continuous_scan_save"
-    timeout: 30000
 - tapOn:
     id: "continuous_scan_save"
 - extendedWaitUntil:
@@ -23,10 +19,6 @@ appId: com.luisete.queda.e2e
     id: "continuous_scan_name"
 - inputText: "Cafe de prueba"
 - hideKeyboard
-- extendedWaitUntil:
-    visible:
-      id: "continuous_scan_save"
-    timeout: 30000
 - tapOn:
     id: "continuous_scan_save"
 - extendedWaitUntil:
