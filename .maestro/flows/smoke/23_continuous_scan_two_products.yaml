@@ -19,6 +19,7 @@ appId: com.luisete.queda.e2e
     id: "continuous_scan_name"
 - inputText: "Cafe de prueba"
 - hideKeyboard
+- scroll
 - tapOn:
     id: "continuous_scan_save"
 - extendedWaitUntil:
